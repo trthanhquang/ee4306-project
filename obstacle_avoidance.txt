@@ -1,0 +1,171 @@
+﻿DesktopJoystick    joystick1
+	/Procedure_UpdateAxes: joy_cb
+StartSimulationEngine  "SimState/basicsim.xml"
+
+UpdateCameraView  
+	/EyePosition:-3 4 2  	/LookAtPoint:0 0 0
+
+AddNewEntity Wall /Position: 0 0 0
+	AddBoxShape  //left wall
+		/Position:5    0.2   -1
+		/Dimensions:12  0.4  0.2  	/Mass:100000
+		/Texture:"ground.bmp"	
+	AddBoxShape  //right wall
+		/Position:5    0.2   1
+		/Dimensions:12  0.4  0.2  	/Mass:100000
+		/Texture:"ground.bmp"	
+
+	unit_length = 0.2
+	total_length = 12.0
+	x_offset = -1.0
+	for (int i =0; i<total_length/(unit_length*2.0);i++)
+	{
+		x = (2*i+1)*unit_length + x_offset;
+		AddBoxShape
+		/Position: {x} 0.001 0
+		/Dimensions: 0.2 0.002 0.1
+	}
+
+//Vehicle 1
+AddDifferentialDriveEntity    base1
+	/Orientation:0    -90.0    0
+	/Position:0    0    -0.5
+	/Mass: 10
+
+AddLaserRangeFinderEntity    lrf_front
+	/Position:0  0.15  -0.25
+	/ParentEntity: base1
+	/Procedure_SensorNotify: laser_cb
+
+//Vehicle 2
+AddDifferentialDriveEntity    base2
+	/Orientation:0    -90.0    0
+	/Position: 3    0    -0.5
+
+//Vehice 3
+AddDifferentialDriveEntity    base3
+	/Orientation:0    90.0    0
+	/Position: 10    0    0.5
+
+FlushScript  
+leftAngle = 0
+rightAngle = 0
+leftDist =50000
+rightDist = 50000
+frontDist = 50000
+leftBackDist = 50000
+
+wait 1000
+
+base2.Go(0.1,0.1)
+base3.Go(0.2,0.2)
+call raw_algo
+
+Procedure p_control_algo
+	left = 0.2
+	right = 0.2
+	
+	base1.Go(left,right)
+	k1 = 0.1/500.0
+	
+	while(leftDist <900)
+	{
+		change = k1*(1000-leftDist)
+		print "leftDist: "+leftDist + " => left + " +change
+		base1.Go(left+change,right)
+		wait 500
+	}
+	print "correct heading"
+	k2 = -0.1/90.0
+	
+	while(Math.Abs (rightAngle) > 1)
+	{
+		change = k2 * rightAngle
+		print "rightAngle: " +rightAngle +" => change + " +change
+		base1.Go(left-change,right+change)
+		wait 500
+	}
+
+	base1.Stop()
+	base2.Stop()
+	base3.Stop()
+End
+
+Procedure raw_algo
+	while(frontDist > 1200)
+		base1.Go(0.4,0.4)
+	
+	base1.Turn(-30,0.2)
+
+	while(rightDist > 500)
+		base1.Go(0.4,0.4)
+
+	base1.Turn(30,0.2)
+
+	base1.Go(0.4,0.4)
+	while(leftDist < 1000)
+		base1.Go(0.4,0.4)
+	wait 1000
+	
+	base1.Turn(30,0.2)
+	while(leftDist > 500)
+		base1.Go(0.4,0.4)
+	base1.Turn(-30,0.2)
+	base1.Go(0.4,0.4)
+End
+
+//-------------------------------- SENSOR CALLBACK -------------------------------------------
+Procedure laser_cb
+	left1 =value.DistanceMeasurements[360]
+	left2 =value.DistanceMeasurements[330] 
+	right1 =value.DistanceMeasurements[0]
+	right2 =value.DistanceMeasurements[30]
+	frontDist = value.DistanceMeasurements[180]
+
+	call getAngleToWall(left1,left2)
+	leftAngle = getAngleToWall
+	
+	call getAngleToWall(right1,right2)
+	rightAngle = - getAngleToWall
+	
+	call getDistanceToWall(left1,left2)
+	leftDist = getDistanceToWall
+
+	call getDistanceToWall(right1,right2)
+	rightDist = getDistanceToWall
+
+	print "----------------------------------------------------------------"
+	print "Distance (left,front,right) = (" + leftDist+", "+frontDist+", "+rightDist+")"
+	print "Angle (left,right) = ("  + leftAngle +", "+rightAngle+")"
+
+End
+
+Procedure getAngleToWall(d1, d2)
+	y = d2 * Math.Sin(Math.PI / 12);
+	x = d1 - d2 * Math.Cos(Math.PI / 12);
+
+	a = 90-(Math.Atan (y/x )/Math.PI *180.0);
+	if (a>=90) 
+		a = a-180;
+	return a;
+End
+
+Procedure getDistanceToWall(d1,d2)
+	temp = (d1 - d2 * Math.Cos(Math.PI /12))/(d2*Math.Sin( Math.PI /12));
+	return d1/ Math.Sqrt (1 + Math.Pow (temp,2));
+End
+
+//----------------------------------------------------------------------------------------------------
+Procedure  joy_cb
+	x = value.X
+	y = value.Y
+		
+	x = x * 0.2
+	
+	leftPower = (-y + x) / 1500.0
+	rightPower = (-y - x) / 1500.0
+
+	base1.Go(leftPower, rightPower)
+End
+
+
