@@ -1,0 +1,212 @@
+DesktopJoystick    joystick1
+	/Procedure_UpdateAxes:proc1
+	/Procedure_UpdateButtons:proc2
+StartSimulationEngine  "SimState/basicsim.xml"
+UpdateCameraView
+	/EyePosition:0 4 0  	/LookAtPoint:0 0 0
+AddNewEntity Wall /Position: 0 0 0
+	AddBoxShape  //left wall
+		/Position:5    0.2   -1
+		/Dimensions:12  0.4  0.2  	/Mass:100000
+		/Texture:"ground.bmp"	
+	AddBoxShape  //right wall
+		/Position:5    0.2   1
+		/Dimensions:12  0.4  0.2  	/Mass:100000
+		/Texture:"ground.bmp"	
+	unit_length = 0.2
+	total_length = 12.0
+	x_offset = -1.0
+	for (int i =0; i<total_length/(unit_length*2.0);i++)
+	{
+		x = (2*i+1)*unit_length + x_offset;
+		AddBoxShape
+		/Position: {x} 0.001 0
+		/Dimensions: 0.2 0.002 0.1
+	}
+//Vehicle 1
+AddDifferentialDriveEntity    base1
+	/Orientation:0    -90.0    0
+	/Position:0    0    -0.5
+	/Mass: 10
+AddLaserRangeFinderEntity    lrf_front
+	/Position:0  0.15  -0.25
+	/ParentEntity:base1
+	/Procedure_SensorNotify: laser_read
+
+AddCompassEntity    compass1
+	/Position:-0.1  0.15  -0.25
+	/ParentEntity:base1
+	/Procedure_SensorNotify: compass_read
+
+//Vehicle 2
+AddDifferentialDriveEntity    base2
+	/Orientation:0    -90.0    0
+	/Position: 3    0    -0.5
+FlushScript 
+BaseTurnSpeed = 0.4
+compass_reading = 0
+CarWidth = 0.313
+HeadingTole = 0.02
+leftAngle = 0
+rightAngle = 0
+leftDist =50000
+rightDist = 50000
+frontDist = 50000
+leftBackDist = 50000
+temp = 0
+leftWheel = 0
+rightWheel = 0
+z0 = 0
+z1 = 0
+middlePoint = 0
+wait 3000
+base2.Go(0.1,0.1)
+
+call execute
+
+Procedure execute
+	while(frontDist > 1.2)
+		base1.Go(0.3, 0.3)
+	call smoothGoTo(2, 1)
+	call smoothGoTo(2, -1)
+	base1.Stop()
+End
+
+Procedure smoothGoTo(deltaX, deltaZ)
+	print "-----------------------------------------------------------"
+	print "Going smoothly to: " + deltaX + " --- " + deltaZ
+	orig_heading = compass_reading
+	smTemp = Math.Abs((deltaX*deltaX*1.0 + deltaZ*deltaZ*1.0) / (2*CarWidth*deltaZ*1.0))
+	print "original heading: " + orig_heading
+	print "smTemp: " + smTemp
+	target_heading = Math.Abs( Math.Asin( 2*deltaX*deltaZ*1.0 / (deltaX*deltaX*1.0 + deltaZ*deltaZ*1.0) ) / (2*Math.PI))  - HeadingTole
+	print "target_heading: " + target_heading
+	diff_heading = 0
+	if (deltaZ > 0) {
+		print "deltaZ is positive"
+		leftWheel = BaseTurnSpeed
+		rightWheel = (smTemp - 1) *leftWheel / (smTemp + 1)
+		print "leftWheel --- rightWheel: " + leftWheel + " --- " + rightWheel
+		while (diff_heading < target_heading) {
+			base1.Go(leftWheel, rightWheel)
+			diff_heading = compass_reading - orig_heading
+			if (diff_heading < (-0.5))
+				diff_heading = diff_heading + 1
+		}
+		print "diff_heading: " + diff_heading
+		base1.Stop()
+		print "------------second-curve---------------"
+		rightWheel = BaseTurnSpeed
+		leftWheel = (smTemp - 1) * rightWheel / (smTemp + 1)
+		print "leftWheel --- rightWheel: " + leftWheel + " --- " + rightWheel
+		while (diff_heading > HeadingTole) {
+			base1.Go(leftWheel, rightWheel)
+			diff_heading = compass_reading - orig_heading
+			if (diff_heading < (-0.5))
+				diff_heading = diff_heading + 1
+		}
+		print "rightDist: " + rightDist
+		print "----------finish smoothGoTo---------"
+	}
+	else {
+		print "deltaZ is not positive"
+		rightWheel = BaseTurnSpeed
+		leftWheel = (smTemp - 1) * rightWheel / (smTemp + 1)
+		print "leftWheel --- rightWheel: " + leftWheel + " --- " + rightWheel
+		diff_heading = orig_heading - compass_reading
+		while (diff_heading < target_heading) {
+			base1.Go(leftWheel, rightWheel)
+			diff_heading = orig_heading - compass_reading
+			if (diff_heading < (-0.5))
+				diff_heading = diff_heading + 1
+		}
+		base1.Stop()
+		print "------------second-curve---------------"
+		leftWheel = BaseTurnSpeed
+		rightWheel = (smTemp - 1) *leftWheel / (smTemp + 1)
+		print "leftWheel --- rightWheel: " + leftWheel + " --- " + rightWheel
+		while (diff_heading > HeadingTole) {
+			base1.Go(leftWheel, rightWheel)
+			diff_heading = orig_heading - compass_reading
+			if (diff_heading < (-0.5))
+				diff_heading = diff_heading + 1
+		}
+		print "rightDist: " + rightDist
+		print "----------finish smoothGoTo---------"
+	}
+	base1.Stop()
+End
+
+Procedure backLaserRead
+	leftBackDist = value.DistanceMeasurements[30]
+	rightBackDist = value.DistanceMeasurements[330]
+	backDist = value.DistanceMeasurements[180]
+	print "=========="
+	print "leftBack: "+ leftBackDist + " rightBack: "+rightBackDist
+	print "back: "+backDist
+End
+//--------------------------------------------------------------------------------------------------//
+Procedure compass_read
+	compass_reading = value.NormalizedMeasurement
+	//print "compass_reading: " + compass_reading
+	print value.TimeStamp
+End
+
+Procedure laser_read
+	left1 =value.DistanceMeasurements[360] / 1000.0
+	left2 =value.DistanceMeasurements[330] / 1000.0
+	right1 =value.DistanceMeasurements[0] / 1000.0
+	right2 =value.DistanceMeasurements[30] /1000.0
+	frontDist = value.DistanceMeasurements[180] / 1000.0
+	call getAngleToWall(left1,left2)
+	leftAngle = getAngleToWall
+	
+	call getAngleToWall(right1,right2)
+	rightAngle = - getAngleToWall
+	
+	call getDistanceToWall(left1,left2)
+	leftDist = getDistanceToWall
+	call getDistanceToWall(right1,right2)
+	rightDist = getDistanceToWall
+End
+Procedure getAngleToWall(d1, d2)
+	y = d2 * Math.Sin(Math.PI / 12);
+	x = d1 - d2 * Math.Cos(Math.PI / 12);
+	a = 90-(Math.Atan (y/x )/Math.PI *180.0);
+	if (a>=90) 
+		a = a-180;
+	return a;
+End
+Procedure getDistanceToWall(d1,d2)
+	temp = (d1 - d2 * Math.Cos(Math.PI /12))/(d2*Math.Sin( Math.PI /12));
+	return d1/ Math.Sqrt (1 + Math.Pow (temp,2));
+End
+//----------------------------------------------------------------------------------------------------
+Procedure proc2
+	if(value.Pressed[1])
+		robot1 =true
+	else
+		robot1 = false
+	if(value.Pressed[2])
+		robot2 = true
+	else
+		robot2 = false
+	
+End
+Procedure  proc1
+	x = value.X
+	y = value.Y
+		
+	x = x * 0.2
+	
+	leftPower = (-y + x) / 1500.0
+	rightPower = (-y - x) / 1500.0
+	if(robot1)
+	{
+		base1.Go(leftPower, rightPower)
+	}
+	if(robot2)
+	{
+		base2.Go(leftPower,rightPower)
+	}
+End
