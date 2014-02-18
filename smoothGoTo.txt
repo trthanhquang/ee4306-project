@@ -1,4 +1,4 @@
-DesktopJoystick    joystick1
+﻿DesktopJoystick    joystick1
 	/Procedure_UpdateAxes:proc1
 	/Procedure_UpdateButtons:proc2
 StartSimulationEngine  "SimState/basicsim.xml"
@@ -6,15 +6,15 @@ UpdateCameraView
 	/EyePosition:0 4 0  	/LookAtPoint:0 0 0
 AddNewEntity Wall /Position: 0 0 0
 	AddBoxShape  //left wall
-		/Position:5    0.2   -1
-		/Dimensions:12  0.4  0.2  	/Mass:100000
-		/Texture:"ground.bmp"	
+		/Position:9    0.2   -1
+		/Dimensions:20  0.4  0.2  	/Mass:100000
+		//Texture:"ground.bmp"	
 	AddBoxShape  //right wall
-		/Position:5    0.2   1
-		/Dimensions:12  0.4  0.2  	/Mass:100000
-		/Texture:"ground.bmp"	
+		/Position:9    0.2   1
+		/Dimensions:20  0.4  0.2  	/Mass:100000
+		//Texture:"ground.bmp"	
 	unit_length = 0.2
-	total_length = 12.0
+	total_length = 20.0
 	x_offset = -1.0
 	for (int i =0; i<total_length/(unit_length*2.0);i++)
 	{
@@ -42,7 +42,16 @@ AddCompassEntity    compass1
 AddDifferentialDriveEntity    base2
 	/Orientation:0    -90.0    0
 	/Position: 3    0    -0.5
+
+//Vehicle 3
+AddDifferentialDriveEntity    base3
+	/Orientation:0    -90.0    0
+	/Position: 10	0    -0.5
+
 FlushScript 
+
+robot1 = true
+robot2 = false
 BaseTurnSpeed = 0.4
 compass_reading = 0
 CarWidth = 0.313
@@ -59,17 +68,45 @@ rightWheel = 0
 z0 = 0
 z1 = 0
 middlePoint = 0
-wait 3000
-base2.Go(0.1,0.1)
+wait 5000
+//base2.Go(0.1,0.1)
 
+ base1.Go(0.05,0.05)
 call execute
 
 Procedure execute
-	while(frontDist > 1.2)
-		base1.Go(0.3, 0.3)
-	call smoothGoTo(2, 1)
-	call smoothGoTo(2, -1)
-	base1.Stop()
+	while(true)
+	{
+		if(frontDist > 1.3)
+		{
+			if(Math.Abs (leftDist - 0.4 ) > 0.1)
+			{
+				print "Go to middle of land. leftDist: "+ leftDist
+				call smoothGoTo(1,0.4 - leftDist)
+			}
+			call correctHeading(0.2)
+			base1.Go(0.2,0.2)
+			wait 100
+		}
+		else{
+			print "overtaking"
+			print "frontDist = "+frontDist
+			call smoothGoTo(2, 1)
+			call smoothGoTo(2, -1)
+		}
+	}
+End
+
+Procedure correctHeading(baseSpeed)
+	k2 = -0.1/30
+	while(Math.Abs (leftAngle) > 5)
+	{
+		print " ----- correcting heading --------"
+		change = k2 * leftAngle
+		print "rightAngle: " +leftAngle +" => change + " +change
+		base1.Go(baseSpeed-change,baseSpeed+change)
+		wait 500
+	}
 End
 
 Procedure smoothGoTo(deltaX, deltaZ)
@@ -77,42 +114,42 @@ Procedure smoothGoTo(deltaX, deltaZ)
 	print "Going smoothly to: " + deltaX + " --- " + deltaZ
 	orig_heading = compass_reading
 	smTemp = Math.Abs((deltaX*deltaX*1.0 + deltaZ*deltaZ*1.0) / (2*CarWidth*deltaZ*1.0))
-	print "original heading: " + orig_heading
-	print "smTemp: " + smTemp
+//	print "original heading: " + orig_heading
+//	print "smTemp: " + smTemp
 	target_heading = Math.Abs( Math.Asin( 2*deltaX*deltaZ*1.0 / (deltaX*deltaX*1.0 + deltaZ*deltaZ*1.0) ) / (2*Math.PI))  - HeadingTole
-	print "target_heading: " + target_heading
+//	print "target_heading: " + target_heading
 	diff_heading = 0
 	if (deltaZ > 0) {
-		print "deltaZ is positive"
+//		print "deltaZ is positive"
 		leftWheel = BaseTurnSpeed
 		rightWheel = (smTemp - 1) *leftWheel / (smTemp + 1)
-		print "leftWheel --- rightWheel: " + leftWheel + " --- " + rightWheel
+//		print "leftWheel --- rightWheel: " + leftWheel + " --- " + rightWheel
 		while (diff_heading < target_heading) {
 			base1.Go(leftWheel, rightWheel)
 			diff_heading = compass_reading - orig_heading
 			if (diff_heading < (-0.5))
 				diff_heading = diff_heading + 1
 		}
-		print "diff_heading: " + diff_heading
+//		print "diff_heading: " + diff_heading
 		base1.Stop()
-		print "------------second-curve---------------"
+//		print "------------second-curve---------------"
 		rightWheel = BaseTurnSpeed
 		leftWheel = (smTemp - 1) * rightWheel / (smTemp + 1)
-		print "leftWheel --- rightWheel: " + leftWheel + " --- " + rightWheel
+//		print "leftWheel --- rightWheel: " + leftWheel + " --- " + rightWheel
 		while (diff_heading > HeadingTole) {
 			base1.Go(leftWheel, rightWheel)
 			diff_heading = compass_reading - orig_heading
 			if (diff_heading < (-0.5))
 				diff_heading = diff_heading + 1
 		}
-		print "rightDist: " + rightDist
-		print "----------finish smoothGoTo---------"
+//		print "rightDist: " + rightDist
+//		print "----------finish smoothGoTo---------"
 	}
 	else {
-		print "deltaZ is not positive"
+		//print "deltaZ is not positive"
 		rightWheel = BaseTurnSpeed
 		leftWheel = (smTemp - 1) * rightWheel / (smTemp + 1)
-		print "leftWheel --- rightWheel: " + leftWheel + " --- " + rightWheel
+		//print "leftWheel --- rightWheel: " + leftWheel + " --- " + rightWheel
 		diff_heading = orig_heading - compass_reading
 		while (diff_heading < target_heading) {
 			base1.Go(leftWheel, rightWheel)
@@ -121,35 +158,27 @@ Procedure smoothGoTo(deltaX, deltaZ)
 				diff_heading = diff_heading + 1
 		}
 		base1.Stop()
-		print "------------second-curve---------------"
+		//print "------------second-curve---------------"
 		leftWheel = BaseTurnSpeed
 		rightWheel = (smTemp - 1) *leftWheel / (smTemp + 1)
-		print "leftWheel --- rightWheel: " + leftWheel + " --- " + rightWheel
+		//print "leftWheel --- rightWheel: " + leftWheel + " --- " + rightWheel
 		while (diff_heading > HeadingTole) {
 			base1.Go(leftWheel, rightWheel)
 			diff_heading = orig_heading - compass_reading
 			if (diff_heading < (-0.5))
 				diff_heading = diff_heading + 1
 		}
-		print "rightDist: " + rightDist
-		print "----------finish smoothGoTo---------"
+		//print "rightDist: " + rightDist
+		//print "----------finish smoothGoTo---------"
 	}
 	base1.Stop()
 End
 
-Procedure backLaserRead
-	leftBackDist = value.DistanceMeasurements[30]
-	rightBackDist = value.DistanceMeasurements[330]
-	backDist = value.DistanceMeasurements[180]
-	print "=========="
-	print "leftBack: "+ leftBackDist + " rightBack: "+rightBackDist
-	print "back: "+backDist
-End
 //--------------------------------------------------------------------------------------------------//
 Procedure compass_read
 	compass_reading = value.NormalizedMeasurement
 	//print "compass_reading: " + compass_reading
-	print value.TimeStamp
+	//print value.TimeStamp
 End
 
 Procedure laser_read
@@ -168,6 +197,7 @@ Procedure laser_read
 	leftDist = getDistanceToWall
 	call getDistanceToWall(right1,right2)
 	rightDist = getDistanceToWall
+
 End
 Procedure getAngleToWall(d1, d2)
 	y = d2 * Math.Sin(Math.PI / 12);
