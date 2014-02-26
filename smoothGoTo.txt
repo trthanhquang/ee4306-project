@@ -1,6 +1,6 @@
-﻿DesktopJoystick    joystick1
-	/Procedure_UpdateAxes:proc1
-	/Procedure_UpdateButtons:proc2
+﻿//DesktopJoystick    joystick1
+//	/Procedure_UpdateAxes:proc1
+//	/Procedure_UpdateButtons:proc2
 StartSimulationEngine  "SimState/basicsim.xml"
 UpdateCameraView
 	/EyePosition:0 4 0  	/LookAtPoint:0 0 0
@@ -41,94 +41,168 @@ AddCompassEntity    compass1
 //Vehicle 2
 AddDifferentialDriveEntity    base2
 	/Orientation:0    -90.0    0
-	/Position: 3    0    -0.5
+	/Position: 4    0    -0.5
 
 //Vehicle 3
 AddDifferentialDriveEntity    base3
 	/Orientation:0    -90.0    0
-	/Position: 10	0    -0.5
+	/Position: 0	0    -1.5
 
 FlushScript 
 
 robot1 = true
 robot2 = false
 
+//Compass global variable
 compass_reading = 0
+
 CarWidth = 0.313
 HeadingTole = 0.02
+
+//Laser global variables
 leftAngle = 0
 rightAngle = 0
 leftDist =50000
 rightDist = 50000
 frontDist = 50000
 leftBackDist = 50000
+
+dvCar2 = 0 //difference in speed
+dvCar3 = 0 
+
+//smoothGo variables
 temp = 0
 leftWheel = 0
 rightWheel = 0
 z0 = 0
 z1 = 0
 middlePoint = 0
+
 // speed - power constant (speed = power x constant)
 kv = 1.56
-// Safe distances in metre
-front_safe = 0.15
-back_safe = 0.15
-// vehicle speed while be stable
-max_speed = 0.5
-cur_speed = 0
-// other vehicle speeds - to be computed
-car1_speed = 0
-car3_speed = 0
-// smoothGoTo base speed and needed time (to be computed)
-base_turn_power = 0.4
-turn_time = 0
-// overtaking constants
-tmax = 0 // time car 2 runs at max speed
-safe_distance = 0
+//Control global variables
+leftPower = 0;
+rightPower = 0;
 
+wait 1000
+print "3"
+wait 1000
+print "2"
+wait 1000
+print "1"
+wait 1000
+print "GO!"
 
-wait 5000
-//base2.Go(0.1,0.1)
+base2.Go(0.1)
+call execute(0.4)
 
- base1.Go(0.05,0.05)
-call execute
+Procedure execute(power)
+	base1.Go(power)
+	while(true)	{
+		if(Math.Abs (leftAngle) > 1)
+			call correctHeadingLeft(power)
 
-Procedure execute
-	while(true)
-	{
-		if(frontDist > 1.3)
-		{
-			if(Math.Abs (leftDist - 0.4 ) > 0.1)
+		if(frontDist > 2 ){
+			if(Math.Abs (leftDist - 0.4) > 0.05)
 			{
 				print "Go to middle of land. leftDist: "+ leftDist
-				call smoothGoTo(1,0.4 - leftDist)
+				call smoothGoTo(1,0.4 - leftDist,power)
 			}
-			call correctHeading(0.2)
-			base1.Go(0.2,0.2)
+			if(Math.Abs (leftAngle) > 1)
+				call correctHeadingLeft(power)
+
+			base1.Go(power)
 			wait 100
 		}
-		else{
+		else {
 			print "overtaking"
 			print "frontDist = "+frontDist
-			call smoothGoTo(2, 1)
-			call smoothGoTo(2, -1)
+			call overtake(power)
 		}
 	}
 End
 
-Procedure correctHeading(baseSpeed)
-	k2 = -0.1/30
-	while(Math.Abs (leftAngle) > 5)
-	{
-		print " ----- correcting heading --------"
-		change = k2 * leftAngle
-		print "rightAngle: " +leftAngle +" => change + " +change
-		base1.Go(baseSpeed-change,baseSpeed+change)
-		wait 500
+Procedure overtake(power) 
+	dp = dvCar2 / kv
+	car2Power= power + dp
+	
+	call smoothGoTo(1.4,0.7,power)
+	call correctHeadingRight(power)
+
+	overtakingPower = 1.25*power
+
+	call estimateSmoothGoTime(1.7,0.7,power)
+	t1 = estimateSmoothGoTime
+
+	call estimateSmoothGoTime(1.7,-0.7,power)
+	t2 = estimateSmoothGoTime
+
+	t3 = correctHeadingRight*0.25
+	print t3
+
+	call estimateOvertakeTime(2, 2, 1.7, 1.7, car2Power, overtakingPower, t1, t2, t3,power)
+	tmax = Util.ToInt(estimateOvertakeTime*1000 )
+	if (tmax > 0){
+		base1.Go(overtakingPower)
+		print tmax
+		wait tmax
 	}
+	call smoothGoTo(1.7,-0.7, power)
 End
 
-Procedure smoothGoTo(deltaX, deltaZ)
+Procedure estimateOvertakeTime(d1,d2,dx1,dx2,P0,Pmax,t1,t2,t3,Pbase)
+	V0 = P0 * kv
+	Vmax = Pmax*kv
+	d3 = t3 * Pbase*kv
+
+	dmax = d1 + d2 + V0*(t1+t2+t3) - dx1 - dx2 - d3
+	tmax = dmax/(Vmax - V0)
+	return tmax
+End
+
+Procedure estimateSmoothGoTime(deltaX,deltaZ,basePower)
+	alpha = Math.Asin (( 2*deltaX*deltaZ)/(deltaX*deltaX + deltaZ*deltaZ)) 
+	time = 2* alpha * ((deltaX*deltaX + deltaZ*deltaZ)/(4*deltaZ) + 0.1565)/ (basePower*kv)
+	return time
+End
+
+Procedure correctHeadingLeft(baseSpeed)
+	k2 = -0.1/30
+	base1.Go(baseSpeed)
+	wait 250
+	print " ----- correcting heading --------"
+	turn = 0
+	while(Math.Abs (leftAngle) > 1)
+	{
+		change = k2 * leftAngle
+		print turn + ". leftAngle: " +leftAngle +" => right  += " +change
+		base1.Go(baseSpeed-change,baseSpeed+change)
+		wait 250
+		turn = turn +1
+	}
+	print " ----- finished correcting heading ---- "
+	return turn
+End
+
+Procedure correctHeadingRight(baseSpeed)
+	k2 = -0.1/30
+	base1.Go(baseSpeed)
+	wait 250
+	print " ----- correcting heading --------"
+	turn = 0
+	while(Math.Abs (rightAngle) > 1)
+	{
+		change = k2 * rightAngle
+		print turn + ". rightAngle: " +rightAngle +" => right  += " +change
+		base1.Go(baseSpeed-change,baseSpeed+change)
+		wait 250
+		turn = turn +1
+	}
+	print " ----- finished correcting heading ---- "
+	return turn
+End
+
+Procedure smoothGoTo(deltaX, deltaZ,basePower)
 	print "-----------------------------------------------------------"
 	print "Going smoothly to: " + deltaX + " --- " + deltaZ
 	orig_heading = compass_reading
@@ -136,7 +210,7 @@ Procedure smoothGoTo(deltaX, deltaZ)
 	target_heading = Math.Abs( Math.Asin( 2*deltaX*deltaZ*1.0 / (deltaX*deltaX*1.0 + deltaZ*deltaZ*1.0) ) / (2*Math.PI))  - HeadingTole
 	diff_heading = 0
 	if (deltaZ > 0) {
-		leftWheel = base_turn_power
+		leftWheel = basePower
 		rightWheel = (smTemp - 1) *leftWheel / (smTemp + 1)
 		while (diff_heading < target_heading) {
 			base1.Go(leftWheel, rightWheel)
@@ -145,7 +219,7 @@ Procedure smoothGoTo(deltaX, deltaZ)
 				diff_heading = diff_heading + 1
 		}
 		base1.Stop()
-		rightWheel = base_turn_power
+		rightWheel = basePower
 		leftWheel = (smTemp - 1) * rightWheel / (smTemp + 1)
 		while (diff_heading > HeadingTole) {
 			base1.Go(leftWheel, rightWheel)
@@ -155,7 +229,7 @@ Procedure smoothGoTo(deltaX, deltaZ)
 		}
 	}
 	else {
-		rightWheel = base_turn_power
+		rightWheel = basePower
 		leftWheel = (smTemp - 1) * rightWheel / (smTemp + 1)
 		diff_heading = orig_heading - compass_reading
 		while (diff_heading < target_heading) {
@@ -165,7 +239,7 @@ Procedure smoothGoTo(deltaX, deltaZ)
 				diff_heading = diff_heading + 1
 		}
 		base1.Stop()
-		leftWheel = base_turn_power
+		leftWheel = basePower
 		rightWheel = (smTemp - 1) *leftWheel / (smTemp + 1)
 		while (diff_heading > HeadingTole) {
 			base1.Go(leftWheel, rightWheel)
@@ -184,37 +258,6 @@ Procedure compass_read
 	//print value.TimeStamp
 End
 
-Procedure laser_read
-	left1 =value.DistanceMeasurements[360] / 1000.0
-	left2 =value.DistanceMeasurements[330] / 1000.0
-	right1 =value.DistanceMeasurements[0] / 1000.0
-	right2 =value.DistanceMeasurements[30] /1000.0
-	frontDist = value.DistanceMeasurements[180] / 1000.0
-	call getAngleToWall(left1,left2)
-	leftAngle = getAngleToWall
-	
-	call getAngleToWall(right1,right2)
-	rightAngle = - getAngleToWall
-	
-	call getDistanceToWall(left1,left2)
-	leftDist = getDistanceToWall
-	call getDistanceToWall(right1,right2)
-	rightDist = getDistanceToWall
-
-End
-Procedure getAngleToWall(d1, d2)
-	y = d2 * Math.Sin(Math.PI / 12);
-	x = d1 - d2 * Math.Cos(Math.PI / 12);
-	a = 90-(Math.Atan (y/x )/Math.PI *180.0);
-	if (a>=90) 
-		a = a-180;
-	return a;
-End
-Procedure getDistanceToWall(d1,d2)
-	temp = (d1 - d2 * Math.Cos(Math.PI /12))/(d2*Math.Sin( Math.PI /12));
-	return d1/ Math.Sqrt (1 + Math.Pow (temp,2));
-End
-//----------------------------------------------------------------------------------------------------
 Procedure proc2
 	if(value.Pressed[1])
 		robot1 =true
@@ -226,6 +269,7 @@ Procedure proc2
 		robot2 = false
 	
 End
+
 Procedure  proc1
 	x = value.X
 	y = value.Y
@@ -243,3 +287,43 @@ Procedure  proc1
 		base2.Go(leftPower,rightPower)
 	}
 End
+
+//----------------------------------------------------------------------------------------------------
+
+Procedure laser_read
+	prevFrontDist = frontDist
+
+	left1 =value.DistanceMeasurements[360] / 1000.0
+	left2 =value.DistanceMeasurements[330] / 1000.0
+	right1 =value.DistanceMeasurements[0] / 1000.0
+	right2 =value.DistanceMeasurements[30] /1000.0
+	frontDist = value.DistanceMeasurements[180] / 1000.0
+
+	call getAngleToWall(left1,left2)
+	leftAngle = getAngleToWall
+	
+	call getAngleToWall(right1,right2)
+	rightAngle = - getAngleToWall
+	
+	call getDistanceToWall(left1,left2)
+	leftDist = getDistanceToWall + 0.2 * Math.Sin (leftAngle* Math.PI /180.0)
+
+	call getDistanceToWall(right1,right2)
+	rightDist = getDistanceToWall - 0.2 * Math.Sin (rightAngle * Math.PI /180.0)
+
+	dvCar2 = (frontDist - prevFrontDist)*4
+	//print "distance (left,right):  (" + leftDist+", "+rightDist+")" + "angle: "+leftAngle+", "+ rightAngle
+End
+Procedure getAngleToWall(d1, d2)
+	y = d2 * Math.Sin(Math.PI / 12);
+	x = d1 - d2 * Math.Cos(Math.PI / 12);
+	a = 90-(Math.Atan (y/x )/Math.PI *180.0);
+	if (a>=90) 
+		a = a-180;
+	return a;
+End
+Procedure getDistanceToWall(d1,d2)
+	temp = (d1 - d2 * Math.Cos(Math.PI /12))/(d2*Math.Sin( Math.PI /12));
+	return d1/ Math.Sqrt (1 + Math.Pow (temp,2));
+End
+
