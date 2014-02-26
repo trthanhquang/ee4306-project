@@ -52,7 +52,7 @@ FlushScript
 
 robot1 = true
 robot2 = false
-BaseTurnSpeed = 0.4
+
 compass_reading = 0
 CarWidth = 0.313
 HeadingTole = 0.02
@@ -68,6 +68,25 @@ rightWheel = 0
 z0 = 0
 z1 = 0
 middlePoint = 0
+// speed - power constant (speed = power x constant)
+kv = 1.56
+// Safe distances in metre
+front_safe = 0.15
+back_safe = 0.15
+// vehicle speed while be stable
+max_speed = 0.5
+cur_speed = 0
+// other vehicle speeds - to be computed
+car1_speed = 0
+car3_speed = 0
+// smoothGoTo base speed and needed time (to be computed)
+base_turn_power = 0.4
+turn_time = 0
+// overtaking constants
+tmax = 0 // time car 2 runs at max speed
+safe_distance = 0
+
+
 wait 5000
 //base2.Go(0.1,0.1)
 
@@ -114,42 +133,30 @@ Procedure smoothGoTo(deltaX, deltaZ)
 	print "Going smoothly to: " + deltaX + " --- " + deltaZ
 	orig_heading = compass_reading
 	smTemp = Math.Abs((deltaX*deltaX*1.0 + deltaZ*deltaZ*1.0) / (2*CarWidth*deltaZ*1.0))
-//	print "original heading: " + orig_heading
-//	print "smTemp: " + smTemp
 	target_heading = Math.Abs( Math.Asin( 2*deltaX*deltaZ*1.0 / (deltaX*deltaX*1.0 + deltaZ*deltaZ*1.0) ) / (2*Math.PI))  - HeadingTole
-//	print "target_heading: " + target_heading
 	diff_heading = 0
 	if (deltaZ > 0) {
-//		print "deltaZ is positive"
-		leftWheel = BaseTurnSpeed
+		leftWheel = base_turn_power
 		rightWheel = (smTemp - 1) *leftWheel / (smTemp + 1)
-//		print "leftWheel --- rightWheel: " + leftWheel + " --- " + rightWheel
 		while (diff_heading < target_heading) {
 			base1.Go(leftWheel, rightWheel)
 			diff_heading = compass_reading - orig_heading
 			if (diff_heading < (-0.5))
 				diff_heading = diff_heading + 1
 		}
-//		print "diff_heading: " + diff_heading
 		base1.Stop()
-//		print "------------second-curve---------------"
-		rightWheel = BaseTurnSpeed
+		rightWheel = base_turn_power
 		leftWheel = (smTemp - 1) * rightWheel / (smTemp + 1)
-//		print "leftWheel --- rightWheel: " + leftWheel + " --- " + rightWheel
 		while (diff_heading > HeadingTole) {
 			base1.Go(leftWheel, rightWheel)
 			diff_heading = compass_reading - orig_heading
 			if (diff_heading < (-0.5))
 				diff_heading = diff_heading + 1
 		}
-//		print "rightDist: " + rightDist
-//		print "----------finish smoothGoTo---------"
 	}
 	else {
-		//print "deltaZ is not positive"
-		rightWheel = BaseTurnSpeed
+		rightWheel = base_turn_power
 		leftWheel = (smTemp - 1) * rightWheel / (smTemp + 1)
-		//print "leftWheel --- rightWheel: " + leftWheel + " --- " + rightWheel
 		diff_heading = orig_heading - compass_reading
 		while (diff_heading < target_heading) {
 			base1.Go(leftWheel, rightWheel)
@@ -158,18 +165,14 @@ Procedure smoothGoTo(deltaX, deltaZ)
 				diff_heading = diff_heading + 1
 		}
 		base1.Stop()
-		//print "------------second-curve---------------"
-		leftWheel = BaseTurnSpeed
+		leftWheel = base_turn_power
 		rightWheel = (smTemp - 1) *leftWheel / (smTemp + 1)
-		//print "leftWheel --- rightWheel: " + leftWheel + " --- " + rightWheel
 		while (diff_heading > HeadingTole) {
 			base1.Go(leftWheel, rightWheel)
 			diff_heading = orig_heading - compass_reading
 			if (diff_heading < (-0.5))
 				diff_heading = diff_heading + 1
 		}
-		//print "rightDist: " + rightDist
-		//print "----------finish smoothGoTo---------"
 	}
 	base1.Stop()
 End
