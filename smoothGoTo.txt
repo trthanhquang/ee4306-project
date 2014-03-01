@@ -1,21 +1,21 @@
-//DesktopJoystick    joystick1
-//	/Procedure_UpdateAxes:proc1
-//	/Procedure_UpdateButtons:proc2
+DesktopJoystick    joystick1
+	/Procedure_UpdateAxes:proc1
+	/Procedure_UpdateButtons:proc2
 StartSimulationEngine  "SimState/basicsim.xml"
 UpdateCameraView
-	/EyePosition:0 4 0  	/LookAtPoint:0 0 0
+	/EyePosition:4 8 4  	/LookAtPoint:4 0 0
 AddNewEntity Wall /Position: 0 0 0
 	AddBoxShape  //left wall
-		/Position:20    0.2   -1
-		/Dimensions:40  0.4  0.2  	/Mass:100000
+		/Position:30    0.2   -1
+		/Dimensions:60  0.4  0.2  	/Mass:100000
 		//Texture:"ground.bmp"	
 	AddBoxShape  //right wall
-		/Position:20    0.2   1
-		/Dimensions:40  0.4  0.2  	/Mass:100000
+		/Position:30    0.2   1
+		/Dimensions:60  0.4  0.2  	/Mass:100000
 		//Texture:"ground.bmp"	
 	unit_length = 0.2
-	total_length = 20.0
-	x_offset = -1.0
+	total_length = 60.0
+	x_offset = 0
 	for (int i =0; i<total_length/(unit_length*2.0);i++)
 	{
 		x = (2*i+1)*unit_length + x_offset;
@@ -26,7 +26,7 @@ AddNewEntity Wall /Position: 0 0 0
 //Vehicle 1
 AddDifferentialDriveEntity    base1
 	/Orientation:0    -90.0    0
-	/Position:0    0    -0.5
+	/Position:1    0    -0.35
 	/Mass: 10
 AddLaserRangeFinderEntity    lrf_front
 	/Position:0  0.15  -0.25
@@ -41,17 +41,30 @@ AddCompassEntity    compass1
 //Vehicle 2
 AddDifferentialDriveEntity    base2
 	/Orientation:0    -90.0    0
-	/Position: 4    0    -0.5
+	/Position: 5    0    -0.35
+
 
 //Vehicle 3
 AddDifferentialDriveEntity    base3
 	/Orientation:0    -90.0    0
-	/Position: 0	0    -1.5
+	/Position: 12	0    -0.35
+
+//Vehicle 4
+AddDifferentialDriveEntity    base4
+	/Orientation:0    90.0    0
+	/Position: 18	0    0.35
+
+//Vehicle 5
+AddDifferentialDriveEntity    base5
+	/Orientation:0    90.0    0
+	/Position: 25	0    0.35
+
 
 FlushScript 
 
-robot1 = true
+robot1 = false
 robot2 = false
+robot3 = false
 
 //Compass global variable
 compass_reading = 0
@@ -66,6 +79,10 @@ leftDist =50000
 rightDist = 50000
 frontDist = 50000
 leftBackDist = 50000
+rangeData = Util.CreateArrayDouble(361)
+
+planeIndex = Util.CreateArrayDouble(10)
+planeDist = Util.CreateArrayDouble(10)
 
 dvCar2 = 0 //difference in speed
 dvCar3 = 0 
@@ -78,14 +95,17 @@ z0 = 0
 z1 = 0
 middlePoint = 0
 
+
+
 // speed - power constant (speed = power x constant)
 kv = 1.56
 //Control global variables
 leftPower = 0;
 rightPower = 0;
 
-//wait 1000
-//print "3"
+
+wait 1000
+print "3"
 wait 1000
 print "2"
 wait 1000
@@ -93,20 +113,79 @@ print "1"
 wait 1000
 print "GO!"
 
-base2.Go(0.2)
-call execute(0.5)
 
-Procedure execute(power)
-	base1.Go(power)
-	while(true)	{
+base2.Go(0.3)
+base3.Go(0.3)
+base4.Go(0.3)
+base5.Go(0.3)
+call execute(0.8)
+
+Procedure execute(basePower)
+{
+	while(true){
+		call scanForPlanes(0, 361)
+		numOfPlanes = scanForPlanes
+			
+		if((planeIndex[numOfPlanes-2] < 180) && (planeDist[numOfPlanes - 2] > 2)){
+			print "freeway!"
+			call straightModeLeft(0.5,2,basePower)
+			dp = dvCar2 / kv
+			car2Power= basePower + dp
+			if(car2Power < 0)
+				continue;
+			print "Detect obstacle at " + frontDist + " ahead, going at P = " + car2Power
+					
+			print "Car2: "+ planeDist[numOfPlanes - 2]
+		}
+
+		//following obstacle
+		while(true)
+		{
+			followingPower = car2Power*1.2
+	
+			call smoothGoTo(2,0.7 - leftDist,car2Power)
+			call correctHeadingLeft(car2Power)
+			
+			call scanForPlanes(0, 361)
+			numOfPlanes = scanForPlanes
+			
+			if(planeIndex[numOfPlanes-2] > 180)
+				print "Car2: "+ planeDist[numOfPlanes - 2]
+			
+			if(planeDist[numOfPlanes - 2] > 2)
+				followingPower = followingPower*1.2
+			else
+				followingPower = followingPower*0.8
+
+			if((planeIndex[1] < 180) && (planeDist[1] < 9))
+			{
+				print "Car3: "+ planeDist[1]
+				print "Opposite Car too close! --> back to land"
+				
+				followingPower = (followingPower + car2Power)/2
+				call straightModeLeft(0.5,3,followingPower)
+			}
+			else{
+				print "overtake!!!!"
+				call overtake(basePower,car2Power)
+				break;
+			}
+		}
+	}
+}
+
+Procedure straightModeLeft(distToWall, safeDistance, power)
+	while(true)
+	{
 		if(Math.Abs (leftAngle) > 1)
 			call correctHeadingLeft(power)
-
-		if(frontDist > 2 ){
-			if(Math.Abs (leftDist - 0.4) > 0.05)
+		if(frontDist > safeDistance){
+			if(Math.Abs (leftDist - distToWall) > 0.05)
 			{
 				print "Go to middle of land. leftDist: "+ leftDist
-				call smoothGoTo(2,0.4 - leftDist,power)
+				dz = distToWall - leftDist
+				//dx = Math.Abs (40*dz)
+				call smoothGoTo(2,dz,power)
 			}
 			if(Math.Abs (leftAngle) > 1)
 				call correctHeadingLeft(power)
@@ -114,40 +193,40 @@ Procedure execute(power)
 			base1.Go(power)
 			wait 100
 		}
-		else {
-			print "overtaking"
-			print "frontDist = "+frontDist
-			call overtake(power)
+		else
+		{
+			print "obstacle ahead"
+			break;
 		}
 	}
 End
 
-Procedure overtake(power) 
-	dp = dvCar2 / kv
-	car2Power= power + dp
-	
-	call smoothGoTo(2,0.8,power)
+
+
+Procedure overtake(power, car2Power) 
+
+	call smoothGoTo(1.4,0.3,power)
 	call correctHeadingRight(power)
 
 	overtakingPower = 1.25*power
 
-	call estimateSmoothGoTime(2,0.8,power)
+	call estimateSmoothGoTime(1.4,0.3,power)
 	t1 = estimateSmoothGoTime
 
-	call estimateSmoothGoTime(2,-0.8,power)
+	call estimateSmoothGoTime(1.4,-0.3,power)
 	t2 = estimateSmoothGoTime
 
-	t3 = correctHeadingRight*0.25
+	t3 = correctHeadingRight
 	print t3
 
-	call estimateOvertakeTime(2, 2, 2, 2, car2Power, overtakingPower, t1, t2, t3,power)
+	call estimateOvertakeTime(2, 2, 1.4, 1.4, car2Power, overtakingPower, t1, t2, t3,power)
 	print estimateOvertakeTime
 	tmax = Util.ToInt(estimateOvertakeTime*1000 )
 	if (tmax > 0){
 		base1.Go(overtakingPower)
 		wait tmax
 	}
-	call smoothGoTo(2,-0.8, power)
+	call smoothGoTo(1.4,-0.3, power)
 End
 
 Procedure estimateOvertakeTime(d1,d2,dx1,dx2,P0,Pmax,t1,t2,t3,Pbase)
@@ -166,6 +245,45 @@ Procedure estimateSmoothGoTime(deltaX,deltaZ,basePower)
 	return time
 End
 
+Procedure correctHeadingLeftPID(baseSpeed)
+	Tu = 1.8 //(s)
+	ku = 0.008
+	
+	kp = ku*0.6
+	ki = kp/Tu*2
+	kd = kp*Tu*0.125
+
+	errSum = 0
+	lastInput = leftAngle
+
+	dt = 100
+	turn = 0
+	print " ----- correcting heading --------"
+	while(Math.Abs (leftAngle) > 1)
+	{
+		dt = 100
+		error = 0-leftAngle
+		errSum += error*0.1
+		dInput = leftAngle - lastInput
+		change = kp * error + ki* errSum - kd*dInput
+		lastInput = leftAngle
+		
+		if(change > 0.1)
+			change = 0.1
+		if (change < (-0.1))
+			change = -0.1
+		print turn + ". err= " +error +" => update rightPower:  " +change
+//		base1.Go(baseSpeed-change,baseSpeed+change)
+		base1.Go(-change,+change)
+		wait dt
+		turn = turn +1
+	}
+	t = turn*dt
+	print "==> leftAngle: " +leftAngle + ", time spent: " + t + " (ms)"
+	print " ----- finished correcting heading ---- "
+	return t
+End
+
 Procedure correctHeadingLeft(baseSpeed)
 	k2 = -0.1/30
 	base1.Go(baseSpeed)
@@ -180,8 +298,9 @@ Procedure correctHeadingLeft(baseSpeed)
 		wait 250
 		turn = turn +1
 	}
+	print turn + ". leftAngle: " +leftAngle
 	print " ----- finished correcting heading ---- "
-	return turn
+	return turn*0.25
 End
 
 Procedure correctHeadingRight(baseSpeed)
@@ -198,13 +317,14 @@ Procedure correctHeadingRight(baseSpeed)
 		wait 250
 		turn = turn +1
 	}
+	print turn + ". rightAngle: " +rightAngle
 	print " ----- finished correcting heading ---- "
-	return turn
+	return turn*0.25
 End
 
 Procedure smoothGoTo(deltaX, deltaZ,basePower)
 	print "-----------------------------------------------------------"
-	print "Going smoothly to: " + deltaX + " --- " + deltaZ
+	print "Going smoothly to: " + deltaX + " --- " + deltaZ + " ---- Power: " + basePower
 	orig_heading = compass_reading
 	smTemp = Math.Abs((deltaX*deltaX*1.0 + deltaZ*deltaZ*1.0) / (2*CarWidth*deltaZ*1.0))
 	target_heading = Math.Abs( Math.Asin( 2*deltaX*deltaZ*1.0 / (deltaX*deltaX*1.0 + deltaZ*deltaZ*1.0) ) / (2*Math.PI))  - HeadingTole
@@ -251,6 +371,90 @@ Procedure smoothGoTo(deltaX, deltaZ,basePower)
 	base1.Go(basePower)
 End
 
+Procedure scanForPlanes(lower_bound, upper_bound)
+	plane_dist = Util.CreateArrayDouble(10);
+	plane_starting_index = Util.CreateArrayDouble(10);
+
+	array_index = 0;
+	localRangeData = Util.CreateArrayDouble(361)
+	Util.ArrayCopy(rangeData, localRangeData, 361)  
+	count = 0
+	count_threshold = 4
+	area_threshold = 0.002
+	first_index = 0
+	second_index = 0
+	first_area = 0
+
+//	print "Boundary: (" + lower_bound  + ", " + upper_bound + ")";
+	for (i=lower_bound; i < upper_bound; i++) {
+		//print "----------------"
+		localRangeData[i] = localRangeData[i] / 1000.0;
+		//print "Index:"  + i + "  range:" + localRangeData[i];
+		if (count == 0) {
+//			print "count: 1"
+			count ++;
+			first_index = i;
+			continue;
+		}
+		else if (count == 1) {
+//			print "count: 2"
+			count ++;
+			second_index = i;
+			continue;
+		}
+		else {
+			if (first_area == 0) {
+				first_area = localRangeData[first_index] * localRangeData[second_index] * Math.Sin( Math.PI / 360.0);
+			}
+			second_area = localRangeData[second_index] * localRangeData[i] * Math.Sin( Math.PI * (i - second_index) / 360.0);
+			full_area = localRangeData[first_index] * localRangeData[i] * Math.Sin( Math.PI * (i - first_index) / 360.0);
+			//print "Areas: " + first_area + "......." + second_area + "........." + full_area;
+			area_diff = Math.Abs (first_area + second_area - full_area);
+			//print "area_diff: " + area_diff;
+			if (area_diff < area_threshold) {
+				count ++;
+				//print "count: " + count;
+			}
+			if ((i == (upper_bound-1)) || (Math.Abs (first_area + second_area - full_area) > area_threshold)) {
+				if (count >= count_threshold) {
+					halfArea = localRangeData[first_index] * localRangeData[second_index] * Math.Sin( Math.PI / 360.0);
+//					print "----------------"
+//					print localRangeData[first_index]
+//					print localRangeData[second_index]
+					base = (localRangeData[first_index] * localRangeData[first_index]) + (localRangeData[second_index] * localRangeData[second_index]);
+					base = base - (2 * localRangeData[first_index] * localRangeData[second_index] * Math.Cos (Math.PI / 360.0));
+					
+					base = Math.Sqrt (base);
+//					print halfArea;
+//					print base;
+					height = halfArea / base;
+//					print height
+					plane_dist[array_index] = height;
+					plane_starting_index[array_index] = first_index;
+					array_index++;
+//					print "array_index: " + array_index
+//					print "first_index: " + first_index
+				}
+
+				first_area = 0;
+				first_index = i;
+				count = 1;
+			}
+		}
+	}
+	print "---------plane_dist--------------"
+	count = 0;
+	for (i = 0; i < 10; i++) {
+		if(plane_dist[i]!=0){
+			print "index: " + plane_starting_index[i] + ", d= " + plane_dist[i]
+			count++
+		}
+	}
+	Util.ArrayCopy(plane_starting_index, planeIndex, 10)
+	Util.ArrayCopy(plane_dist, planeDist, 10)
+	return count
+End
+
 //--------------------------------------------------------------------------------------------------//
 Procedure compass_read
 	compass_reading = value.NormalizedMeasurement
@@ -267,7 +471,32 @@ Procedure proc2
 		robot2 = true
 	else
 		robot2 = false
-	
+	if(value.Pressed[3])
+		robot3 = true
+	else
+		robot3 = false
+			
+	if(value.Pressed[4]){
+		print "------ Scan For Plane ------"
+		call scanForPlanes(0, 361);
+	}
+
+	if(value.Pressed[5])
+	{
+		print "------ Laser Range Finder ------"
+		print "front: " + frontDist
+		print "distance (left,right):  (" + leftDist+", "+rightDist+")"
+	}
+
+	if(value.Pressed[6]){
+		call correctHeadingLeftPID(0.5)
+		base1.Stop()
+		//base1.Go(0.1,0.1)
+	}
+	if(value.Pressed[7])
+		base1.Turn(30,0.5)
+	if(value.Pressed[8])
+		call execute(0.7)
 End
 
 Procedure  proc1
@@ -278,19 +507,25 @@ Procedure  proc1
 	
 	leftPower = (-y + x) / 1500.0
 	rightPower = (-y - x) / 1500.0
+
+	if(leftPower > 1)
+		leftPower = 1
+	if(rightPower > 1)
+		rightPower = 1
+
+
 	if(robot1)
-	{
 		base1.Go(leftPower, rightPower)
-	}
 	if(robot2)
-	{
 		base2.Go(leftPower,rightPower)
-	}
+	if(robot3)
+		base3.Go(leftPower,rightPower)
 End
 
 //----------------------------------------------------------------------------------------------------
 
 Procedure laser_read
+
 	prevFrontDist = frontDist
 
 	left1 =value.DistanceMeasurements[360] / 1000.0
@@ -312,7 +547,8 @@ Procedure laser_read
 	rightDist = getDistanceToWall - 0.2 * Math.Sin (rightAngle * Math.PI /180.0)
 
 	dvCar2 = (frontDist - prevFrontDist)*4
-	//print "distance (left,right):  (" + leftDist+", "+rightDist+")" + "angle: "+leftAngle+", "+ rightAngle
+
+	Util.ArrayCopy(value.DistanceMeasurements, rangeData, 361)
 End
 Procedure getAngleToWall(d1, d2)
 	y = d2 * Math.Sin(Math.PI / 12);
