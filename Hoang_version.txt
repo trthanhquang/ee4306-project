@@ -41,7 +41,7 @@ AddCompassEntity    compass1
 //Vehicle 2
 AddDifferentialDriveEntity    base2
 	/Orientation:0    -90.0    0
-	/Position: 4    0    -0.5
+	/Position: 4    0    0.5
 
 //Vehicle 3
 AddDifferentialDriveEntity    base3
@@ -102,10 +102,7 @@ safe_distance = 0
 rangeData = Util.CreateArrayDouble(361)
 
 wait 5000
-base1.Go(0.1,0.1)
-wait 5000
-call scanForPlanes(0, 181);
-base1.Stop()
+
 
 Procedure test1
 	array1 = Util.CreateArrayDouble(10)
@@ -273,6 +270,8 @@ End
 
 Procedure scanForPlanes(lower_bound, upper_bound)
 	plane_dist = Util.CreateArrayDouble(10);
+	plane_starting_index = Util.CreateArrayDouble(10);
+
 	array_index = 0;
 	localRangeData = Util.CreateArrayDouble(361)
 	Util.ArrayCopy(rangeData, localRangeData, 361)  
@@ -285,17 +284,17 @@ Procedure scanForPlanes(lower_bound, upper_bound)
 
 	print "Boundary: (" + lower_bound  + ", " + upper_bound + ")";
 	for (i=lower_bound; i < upper_bound; i++) {
-		print "----------------"
+		//print "----------------"
 		localRangeData[i] = localRangeData[i] / 1000.0;
-		print "Index:"  + i + "  range:" + localRangeData[i];
+		//print "Index:"  + i + "  range:" + localRangeData[i];
 		if (count == 0) {
-			print "count: 1"
+//			print "count: 1"
 			count ++;
 			first_index = i;
 			continue;
 		}
 		else if (count == 1) {
-			print "count: 2"
+//			print "count: 2"
 			count ++;
 			second_index = i;
 			continue;
@@ -306,30 +305,34 @@ Procedure scanForPlanes(lower_bound, upper_bound)
 			}
 			second_area = localRangeData[second_index] * localRangeData[i] * Math.Sin( Math.PI * (i - second_index) / 360.0);
 			full_area = localRangeData[first_index] * localRangeData[i] * Math.Sin( Math.PI * (i - first_index) / 360.0);
-			print "Areas: " + first_area + "......." + second_area + "........." + full_area;
+			//print "Areas: " + first_area + "......." + second_area + "........." + full_area;
 			area_diff = Math.Abs (first_area + second_area - full_area);
-			print "area_diff: " + area_diff;
+			//print "area_diff: " + area_diff;
 			if (area_diff < area_threshold) {
 				count ++;
-				print "count: " + count;
+				//print "count: " + count;
 			}
 			if ((i == (upper_bound-1)) || (Math.Abs (first_area + second_area - full_area) > area_threshold)) {
 				if (count >= count_threshold) {
-					distance = localRangeData[first_index] * localRangeData[second_index] * Math.Sin( Math.PI / 360.0);
-					
+					halfArea = localRangeData[first_index] * localRangeData[second_index] * Math.Sin( Math.PI / 360.0);
+					print "----------------"
 					print localRangeData[first_index]
 					print localRangeData[second_index]
-					deno = (localRangeData[first_index] * localRangeData[first_index]) + (localRangeData[second_index] * localRangeData[second_index]);
-					deno = deno - (2 * localRangeData[first_index] * localRangeData[second_index] * Math.Cos (Math.PI / 360.0));
+					base = (localRangeData[first_index] * localRangeData[first_index]) + (localRangeData[second_index] * localRangeData[second_index]);
+					base = base - (2 * localRangeData[first_index] * localRangeData[second_index] * Math.Cos (Math.PI / 360.0));
 					
-					deno = Math.Sqrt (deno);
-					print distance;
-					print deno;
-					distance = distance / deno;
-					plane_dist[array_index] = distance;
+					base = Math.Sqrt (base);
+					print halfArea;
+					print base;
+					height = halfArea / base;
+					print height
+					plane_dist[array_index] = height;
+					plane_starting_index[array_index] = first_index;
 					array_index++;
-					print "array_index: " + array_index
+//					print "array_index: " + array_index
+//					print "first_index: " + first_index
 				}
+
 				first_area = 0;
 				first_index = i;
 				count = 1;
@@ -338,7 +341,10 @@ Procedure scanForPlanes(lower_bound, upper_bound)
 	}
 	print "---------plane_dist--------------"
 	for (i = 0; i < 10; i++) {
-		print plane_dist[i]
+		if(plane_dist[i] != 0){
+			angle = plane_starting_index[i] * 0.5 
+			print "index: " + plane_starting_index[i] + ", d= " + plane_dist[i] + ",angle = " + angle
+		}
 	}
 End
 
@@ -356,7 +362,8 @@ Procedure proc2
 		robot2 = true
 	else
 		robot2 = false
-	
+	if(value.Pressed[4])
+		call scanForPlanes(0, 360);
 End
 
 Procedure  proc1
