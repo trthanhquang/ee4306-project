@@ -47,7 +47,7 @@ AddDifferentialDriveEntity    base2
 AddDifferentialDriveEntity    base3
 	/Orientation:0    -90.0    0
 	/Position: 0	0    -1.5
-	/Position: 9	0    0.5
+	/Position: 3	0    0.5
 
 FlushScript 
 
@@ -104,7 +104,7 @@ rangeData = Util.CreateArrayDouble(361)
 wait 5000
 base1.Go(0.1,0.1)
 wait 5000
-call scanForPlanes(0, 181);
+call scanForPlanes(0, 361);
 base1.Stop()
 
 Procedure test1
@@ -272,32 +272,48 @@ Procedure smoothGoTo(deltaX, deltaZ,basePower)
 End
 
 Procedure scanForPlanes(lower_bound, upper_bound)
-	plane_dist = Util.CreateArrayDouble(10);
+	// perpendicular distance to planes
+	dir_dist = Util.CreateArrayDouble(10);
+	// real distance to planes
+	real_dist = Util.CreateArrayDouble(10);
+	// angle to planes
+	plane_angle = Util.CreateArrayDouble(10);
 	array_index = 0;
+
 	localRangeData = Util.CreateArrayDouble(361)
 	Util.ArrayCopy(rangeData, localRangeData, 361)  
 	count = 0
 	count_threshold = 5
 	area_threshold = 0.001
-	first_index = 0
-	second_index = 0
+	first_index = 0;
+	second_index = 0;
+	last_index = 0;
 	first_area = 0
+	bisector = 0
+	bh_angle = 0;
+	smallest_range_index = 0;
 
 	print "Boundary: (" + lower_bound  + ", " + upper_bound + ")";
 	for (i=lower_bound; i < upper_bound; i++) {
-		print "----------------"
 		localRangeData[i] = localRangeData[i] / 1000.0;
-		print "Index:"  + i + "  range:" + localRangeData[i];
 		if (count == 0) {
+		print "----------------"
+		print "Index:"  + i + "  range:" + localRangeData[i];
 			print "count: 1"
 			count ++;
 			first_index = i;
+			smallest_range_index = i;
 			continue;
 		}
 		else if (count == 1) {
+			print "----------------"
+			print "Index:"  + i + "  range:" + localRangeData[i];
 			print "count: 2"
 			count ++;
 			second_index = i;
+			if (localRangeData[i] < localRangeData[smallest_range_index]) {
+				smallest_range_index = i;
+			}
 			continue;
 		}
 		else {
@@ -306,40 +322,78 @@ Procedure scanForPlanes(lower_bound, upper_bound)
 			}
 			second_area = localRangeData[second_index] * localRangeData[i] * Math.Sin( Math.PI * (i - second_index) / 360.0);
 			full_area = localRangeData[first_index] * localRangeData[i] * Math.Sin( Math.PI * (i - first_index) / 360.0);
-			print "Areas: " + first_area + "......." + second_area + "........." + full_area;
 			area_diff = Math.Abs (first_area + second_area - full_area);
-			print "area_diff: " + area_diff;
 			if (area_diff < area_threshold) {
 				count ++;
-				print "count: " + count;
+				last_index = i;
+				if (localRangeData[i] < localRangeData[smallest_range_index]) {
+					smallest_range_index = i;
+				}
 			}
-			if ((i == (upper_bound-1)) || (Math.Abs (first_area + second_area - full_area) > area_threshold)) {
+			if ((i == (upper_bound-1)) || (area_diff > area_threshold)) {
 				if (count >= count_threshold) {
+					// debug printing	
+					print "----------------"
+					print "Index:"  + i + "  range:" + localRangeData[i];
+					print "Areas: " + first_area + "......." + second_area + "........." + full_area;
+					print "area_diff: " + area_diff;
+					print "count: " + count;	
+					print "first_range: " + localRangeData[first_index]
+					print "second_range: " + localRangeData[second_index]
+					print "last_index: " + last_index;	
+					print "last_range: " + localRangeData[last_index]
+
+					// compute the perpendicular distance (dir_dist)
 					distance = localRangeData[first_index] * localRangeData[second_index] * Math.Sin( Math.PI / 360.0);
-					
-					print localRangeData[first_index]
-					print localRangeData[second_index]
 					deno = (localRangeData[first_index] * localRangeData[first_index]) + (localRangeData[second_index] * localRangeData[second_index]);
 					deno = deno - (2 * localRangeData[first_index] * localRangeData[second_index] * Math.Cos (Math.PI / 360.0));
-					
 					deno = Math.Sqrt (deno);
-					print distance;
-					print deno;
 					distance = distance / deno;
-					plane_dist[array_index] = distance;
-					array_index++;
+					print "distance: " + distance;
+					dir_dist[array_index] = distance;
+					// compute the real distance (real_dist)
+					real_dist[array_index] = 1.0 * localRangeData[smallest_range_index];
+					// compute the angle to the planes
+					bisector = 2.0 * localRangeData[first_index] * localRangeData[last_index] * Math.Cos ((last_index - first_index) * Math.PI / 720)
+					bisector = bisector / (localRangeData[first_index] + localRangeData[last_index])
+					print "bisector: " + bisector;
+					bh_angle = Math.Acos (distance / bisector);
+					if (localRangeData[last_index] < localRangeData[first_index]) {
+						bh_angle = -bh_angle;
+					}
+					print "bh_angle: " + bh_angle;
+					angle = ((first_index + last_index) / 2.0 - 181) * Math.PI / 360.0 - bh_angle;
+					angle = angle * 180.0 / Math.PI;
+					if (angle > 0) {
+						angle = angle - 90;
+					}
+					else {
+						angle = angle + 90;
+					}
+					plane_angle[array_index] = angle;
 					print "array_index: " + array_index
+					array_index++;
 				}
 				first_area = 0;
 				first_index = i;
+				smallest_range_index = i;
 				count = 1;
 			}
 		}
 	}
-	print "---------plane_dist--------------"
+	print "---------dir_dist--------------"
 	for (i = 0; i < 10; i++) {
-		print plane_dist[i]
+		print dir_dist[i]
 	}
+	print "---------real_dist-------------"
+	for (i = 0; i < 10; i++) {
+		print real_dist[i]
+	}
+	print "---------plane_angle-----------"
+	for (i = 0; i < 10; i++) {
+		print plane_angle[i]
+	}
+	
 End
 
 //--------------------------------------------------------------------------------------------------//
