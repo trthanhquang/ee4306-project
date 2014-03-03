@@ -26,7 +26,7 @@ AddNewEntity Wall /Position: 0 0 0
 //Vehicle 1
 AddDifferentialDriveEntity    base1
 	/Orientation:0    -90.0    0
-	/Position:1    0    -0.35
+	/Position:1    0    0
 	/Mass: 10
 AddLaserRangeFinderEntity    lrf_front
 	/Position:0  0.15  -0.25
@@ -47,7 +47,7 @@ AddDifferentialDriveEntity    base2
 //Vehicle 3
 AddDifferentialDriveEntity    base3
 	/Orientation:0    -90.0    0
-	/Position: 12	0    -0.35
+	/Position: 20	0    -0.35
 
 //Vehicle 4
 AddDifferentialDriveEntity    base4
@@ -61,6 +61,8 @@ AddDifferentialDriveEntity    base5
 
 
 FlushScript 
+
+INF = 1000000
 
 robot1 = false
 robot2 = false
@@ -80,14 +82,19 @@ rightDist = 50000
 frontDist = 50000
 leftBackDist = 50000
 rangeData = Util.CreateArrayDouble(361)
+laserReadFlag = 0
 
+//global variables for planeScanner
+planeStartingIndex = Util.CreateArrayDouble(10)
+planeEndingIndex = Util.CreateArrayDouble(10)
+planePerDist = Util.CreateArrayDouble(10)
 
-planeIndex = Util.CreateArrayDouble(10)
-planeAngle = Util.CreateArrayDouble(10)
-planeDist = Util.CreateArrayDouble(10)
+//getCarSpeed
+leftCarDist = 0
+rightCarDist = 0
 
-dvCar2 = 0 //difference in speed
-dvCar3 = 0 
+dvLeftCar = 0
+dvRightCar = 0
 
 //smoothGo variables
 temp = 0
@@ -97,13 +104,8 @@ z0 = 0
 z1 = 0
 middlePoint = 0
 
-
-
 // speed - power constant (speed = power x constant)
 kv = 1.56
-//Control global variables
-leftPower = 0;
-rightPower = 0;
 
 
 wait 1000
@@ -115,10 +117,10 @@ print "1"
 wait 1000
 print "GO!"
 
-//base2.Go(0.3)
+base2.Go(0.2)
 //base3.Go(0.3)
 //base4.Go(0.3)
-//base5.Go(0.3)
+base5.Go(0.3)
 //call execute(0.8)
 
 Procedure execute(basePower)
@@ -372,9 +374,59 @@ Procedure smoothGoTo(deltaX, deltaZ,basePower)
 	base1.Go(basePower)
 End
 
+Procedure scanForSpeed()
+	dvLeftCar = INF
+	dvRightCar = INF
+	rightCarDist = INF
+	leftCarDist = INF
+
+	laserReadFlag = 1
+	call scanForPlanes(0, 361)
+	counter1= scanForPlanes
+	if(counter1 == 0)
+		return true //no car ahead
+
+	if (planeStartingIndex[0] < 180){
+		rightCarDist = Util.ToInt(planePerDist[0]*1000) /1000.0
+		print "[1] detect right car at " + rightCarDist
+	}
+
+	if(planeEndingIndex[counter1-1] > 180){
+		leftCarDist = Util.ToInt(planePerDist[counter1-1]*1000) /1000.0
+		print "[1] detect left car at " + leftCarDist
+	}
+//	print "____ 2nd Scan ____"
+	//scan 2nd time
+	
+	while(laserReadFlag>0)
+		wait 50
+	call scanForPlanes(0, 361)
+	counter2 = scanForPlanes
+
+	if(counter2 == 0)
+		return false //may have error !!!
+	
+	if ((planeStartingIndex[0] < 180) && (rightCarDist !=INF))
+	{
+		dvRightCar = (planePerDist[0] - rightCarDist)*4 //dt=0.25s
+		dpRight = Util.ToInt(dvRightCar/kv*100) /100.0
+		rightCarDist = Util.ToInt(planePerDist[0]*1000) /1000.0
+		print "[2] detect right car at " + rightCarDist + ", with dpRight = "+dpRight
+	}
+
+	if((planeEndingIndex[counter2-1] > 180) && (leftCarDist !=INF)){
+		dvLeftCar = (planePerDist[counter2-1] - leftCarDist)*4 //dt = 0.25s
+		dpLeft = Util.ToInt(dvLeftCar/kv*100) /100.0
+		leftCarDist = Util.ToInt(planePerDist[counter2-1]*1000) /1000.0
+		print "[2] detect left car at " + leftCarDist + ", with dpLeft = " + dpLeft
+	}
+	return true
+End
+
+
 Procedure scanForPlanes(lower_bound, upper_bound)
 	// perpendicular distance to planes
-	dir_dist = Util.CreateArrayDouble(10);
+	p_dist = Util.CreateArrayDouble(10);
 	// real distance to planes
 	real_dist = Util.CreateArrayDouble(10);
 	
@@ -399,7 +451,7 @@ Procedure scanForPlanes(lower_bound, upper_bound)
 	bh_angle = 0;
 	smallest_range_index = 0;
 
-	print "Boundary: (" + lower_bound  + ", " + upper_bound + ")";
+//	print "Boundary: (" + lower_bound  + ", " + upper_bound + ")";
 	for (i=lower_bound; i < upper_bound; i++) {
 		localRangeData[i] = localRangeData[i] / 1000.0;
 		if (count == 0) {
@@ -452,14 +504,14 @@ Procedure scanForPlanes(lower_bound, upper_bound)
 					planeStart[array_index] = first_index
 					planeEnd[array_index] = last_index
 
-					// compute the perpendicular distance (dir_dist)
+					// compute the perpendicular distance (p_dist)
 					distance = localRangeData[first_index] * localRangeData[second_index] * Math.Sin( Math.PI / 360.0);
 					deno = (localRangeData[first_index] * localRangeData[first_index]) + (localRangeData[second_index] * localRangeData[second_index]);
 					deno = deno - (2 * localRangeData[first_index] * localRangeData[second_index] * Math.Cos (Math.PI / 360.0));
 					deno = Math.Sqrt (deno);
 					distance = distance / deno;
 //					print "distance: " + distance;
-					dir_dist[array_index] = distance;
+					p_dist[array_index] = distance;
 					// compute the real distance (real_dist)
 					real_dist[array_index] = 1.0 * localRangeData[smallest_range_index];
 					// compute the angle to the planes
@@ -483,9 +535,13 @@ Procedure scanForPlanes(lower_bound, upper_bound)
 					else {
 						angle = angle + 90;
 					}
-					plane_angle[array_index] = angle;
-//					print "array_index: " + array_index
-					array_index++;
+
+					//check for perpendicular plane
+					if ( Math.Abs ( Math.Abs (angle) - 90 ) < 10){
+						plane_angle[array_index] = angle;
+	//					print "array_index: " + array_index
+						array_index++;
+					}
 				}
 				first_area = 0;
 				first_index = i;
@@ -494,40 +550,22 @@ Procedure scanForPlanes(lower_bound, upper_bound)
 			}
 		}
 	}
-	count = 0;
-	for (i = 0; i < 10; i++) {
-		if((real_dist[i]!=0) && (Math.Abs ( Math.Abs (plane_angle[i] ) - 90 ) < 10)){
-			plane_angle[i] = Util.ToInt(plane_angle[i])
-			print "plane: (" +planeStart[i] +", " + planeEnd[i]+ ") plane_angle = "+ plane_angle[i] +"  p_dist = " + dir_dist[i]
-			count++;
-		}
+
+	for (i = 0; i < array_index; i++) {
+		plane_angle[i] = Util.ToInt(plane_angle[i])
+		print "plane: (" +planeStart[i] +", " + planeEnd[i]+ "),  p_dist = " + p_dist[i]
 	}
+		
+	Util.ArrayCopy(planeStart, planeStartingIndex, 10)
+	Util.ArrayCopy(planeEnd, planeEndingIndex, 10)
+	Util.ArrayCopy(p_dist, planePerDist, 10)
 
-	Util.ArrayCopy(planeStart, planeIndex, 10)
-	Util.ArrayCopy(dir_dist, planeDist, 10)
-	Util.ArrayCopy(plane_angle, planeAngle, 10)
-
-	return count
-End
-
-Procedure scanForPlanes2(lower_bound, upper_bound)
-	print "---------plane_dist--------------"
-	count = 0;
-	for (i = 0; i < 10; i++) {
-		if(plane_dist[i]!=0){
-			print "index: " + plane_starting_index[i] + ", d= " + plane_dist[i]
-			count++
-		}
-	}
-
-	return count
+	return array_index;
 End
 
 //--------------------------------------------------------------------------------------------------//
 Procedure compass_read
 	compass_reading = value.NormalizedMeasurement
-	//print "compass_reading: " + compass_reading
-	//print value.TimeStamp
 End
 
 Procedure proc2
@@ -549,21 +587,28 @@ Procedure proc2
 		call scanForPlanes(0, 361);
 	}
 
-	if(value.Pressed[5])
+	if(value.Pressed[5]){
+		print "------ Scan For Speed ------"
+		call scanForSpeed();
+	}
+	
+	if(value.Pressed[6])
 	{
 		print "------ Laser Range Finder ------"
 		print "front: " + frontDist
 		print "distance (left,right):  (" + leftDist+", "+rightDist+")"
 	}
 
-	if(value.Pressed[6]){
-		call correctHeadingLeftPID(0.5)
-		base1.Stop()
-		//base1.Go(0.1,0.1)
-	}
+
 	if(value.Pressed[7])
 		base1.Turn(30,0.5)
-	if(value.Pressed[8])
+
+	if(value.Pressed[8]){
+		call correctHeadingLeftPID(0.5)
+		base1.Stop()
+	}
+
+	if(value.Pressed[9])
 		call execute(0.7)
 End
 
@@ -593,8 +638,9 @@ End
 //----------------------------------------------------------------------------------------------------
 
 Procedure laser_read
-
-	prevFrontDist = frontDist
+	//reduce flag if new data arrives
+	if(laserReadFlag > 0)
+		laserReadFlag = laserReadFlag -1;
 
 	left1 =value.DistanceMeasurements[360] / 1000.0
 	left2 =value.DistanceMeasurements[330] / 1000.0
@@ -613,8 +659,6 @@ Procedure laser_read
 
 	call getDistanceToWall(right1,right2)
 	rightDist = getDistanceToWall - 0.2 * Math.Sin (rightAngle * Math.PI /180.0)
-
-	dvCar2 = (frontDist - prevFrontDist)*4
 
 	Util.ArrayCopy(value.DistanceMeasurements, rangeData, 361)
 End
