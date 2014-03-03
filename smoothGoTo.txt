@@ -1,8 +1,13 @@
+<<<<<<< HEAD
 ﻿DesktopJoystick    joystick1
+=======
+DesktopJoystick    joystick1
+>>>>>>> origin/louis
 	/Procedure_UpdateAxes:proc1
 	/Procedure_UpdateButtons:proc2
 StartSimulationEngine  "SimState/basicsim.xml"
 UpdateCameraView
+<<<<<<< HEAD
 	/EyePosition:-4 8 1  	/LookAtPoint:4 0 0
 AddNewEntity Wall /Position: 0 0 0
 	AddBoxShape  //left wall
@@ -12,10 +17,21 @@ AddNewEntity Wall /Position: 0 0 0
 	AddBoxShape  //right wall
 		/Position:15    0.2   1
 		/Dimensions:40  0.4  0.2  	/Mass:100000
+=======
+	/EyePosition:4 8 4  	/LookAtPoint:4 0 0
+AddNewEntity Wall /Position: 0 0 0
+	AddBoxShape  //left wall
+		/Position:30    0.2   -1
+		/Dimensions:60  0.4  0.2  	/Mass:100000
+		//Texture:"ground.bmp"	
+	AddBoxShape  //right wall
+		/Position:30    0.2   1
+		/Dimensions:60  0.4  0.2  	/Mass:100000
+>>>>>>> origin/louis
 		//Texture:"ground.bmp"	
 	unit_length = 0.2
-	total_length = 20.0
-	x_offset = -1.0
+	total_length = 60.0
+	x_offset = 0
 	for (int i =0; i<total_length/(unit_length*2.0);i++)
 	{
 		x = (2*i+1)*unit_length + x_offset;
@@ -26,7 +42,11 @@ AddNewEntity Wall /Position: 0 0 0
 //Vehicle 1
 AddDifferentialDriveEntity    base1
 	/Orientation:0    -90.0    0
+<<<<<<< HEAD
 	/Position:0    0    0
+=======
+	/Position:1    0    -0.35
+>>>>>>> origin/louis
 	/Mass: 10
 AddLaserRangeFinderEntity    lrf_front
 	/Position:0  0.15  -0.25
@@ -41,12 +61,33 @@ AddCompassEntity    compass1
 //Vehicle 2
 AddDifferentialDriveEntity    base2
 	/Orientation:0    -90.0    0
+<<<<<<< HEAD
 	/Position: 5    0    -0.5
 
 //Vehicle 3
 AddDifferentialDriveEntity    base3
 	/Orientation:0    90.0    0
 	/Position: 10	0    0.5
+=======
+	/Position: 5    0    -0.35
+
+
+//Vehicle 3
+AddDifferentialDriveEntity    base3
+	/Orientation:0    -90.0    0
+	/Position: 12	0    -0.35
+
+//Vehicle 4
+AddDifferentialDriveEntity    base4
+	/Orientation:0    90.0    0
+	/Position: 18	0    0.35
+
+//Vehicle 5
+AddDifferentialDriveEntity    base5
+	/Orientation:0    90.0    0
+	/Position: 25	0    0.35
+
+>>>>>>> origin/louis
 
 FlushScript 
 
@@ -101,6 +142,7 @@ print "1"
 wait 1000
 print "GO!"
 
+<<<<<<< HEAD
 basePower = 0.7
 base2.Go(0.3)
 
@@ -137,18 +179,81 @@ while(true){
 		}
 	}
 }
+=======
+>>>>>>> origin/louis
 
-Procedure execute(power)
-	base1.Go(power)
-	while(true)	{
+base2.Go(0.3)
+base3.Go(0.3)
+base4.Go(0.3)
+base5.Go(0.3)
+call execute(0.8)
+
+Procedure execute(basePower)
+{
+	while(true){
+		call scanForPlanes(0, 361)
+		numOfPlanes = scanForPlanes
+			
+		if((planeIndex[numOfPlanes-2] < 180) && (planeDist[numOfPlanes - 2] > 2)){
+			print "freeway!"
+			call straightModeLeft(0.5,2,basePower)
+			dp = dvCar2 / kv
+			car2Power= basePower + dp
+			if(car2Power < 0)
+				continue;
+			print "Detect obstacle at " + frontDist + " ahead, going at P = " + car2Power
+					
+			print "Car2: "+ planeDist[numOfPlanes - 2]
+		}
+
+		//following obstacle
+		while(true)
+		{
+			followingPower = car2Power*1.2
+	
+			call smoothGoTo(2,0.7 - leftDist,car2Power)
+			call correctHeadingLeft(car2Power)
+			
+			call scanForPlanes(0, 361)
+			numOfPlanes = scanForPlanes
+			
+			if(planeIndex[numOfPlanes-2] > 180)
+				print "Car2: "+ planeDist[numOfPlanes - 2]
+			
+			if(planeDist[numOfPlanes - 2] > 2)
+				followingPower = followingPower*1.2
+			else
+				followingPower = followingPower*0.8
+
+			if((planeIndex[1] < 180) && (planeDist[1] < 9))
+			{
+				print "Car3: "+ planeDist[1]
+				print "Opposite Car too close! --> back to land"
+				
+				followingPower = (followingPower + car2Power)/2
+				call straightModeLeft(0.5,3,followingPower)
+			}
+			else{
+				print "overtake!!!!"
+				call overtake(basePower,car2Power)
+				break;
+			}
+		}
+	}
+}
+
+Procedure straightModeLeft(distToWall, safeDistance, power)
+	while(true)
+	{
 		if(Math.Abs (leftAngle) > 1)
 			call correctHeadingLeft(power)
-
-		if(frontDist > 2 ){
-			if(Math.Abs (leftDist - 0.4) > 0.05)
+		if(frontDist > safeDistance){
+			if(Math.Abs (leftDist - distToWall) > 0.05)
 			{
 				print "Go to middle of land. leftDist: "+ leftDist
-				call smoothGoTo(2,0.4 - leftDist,power)
+				dz = distToWall - leftDist
+				//dx = Math.Abs (40*dz)
+				call smoothGoTo(2,dz,power)
 			}
 			if(Math.Abs (leftAngle) > 1)
 				call correctHeadingLeft(power)
@@ -156,14 +261,22 @@ Procedure execute(power)
 			base1.Go(power)
 			wait 100
 		}
+<<<<<<< HEAD
 		else {
 			print "overtaking"
 			call scanForPlanes(0, 361)
 			call overtake(power)
+=======
+		else
+		{
+			print "obstacle ahead"
+			break;
+>>>>>>> origin/louis
 		}
 	}
 End
 
+<<<<<<< HEAD
 Procedure straightModeLeft(distToWall, safeDistance, power)
 	while(true)
 	{
@@ -191,6 +304,8 @@ Procedure straightModeLeft(distToWall, safeDistance, power)
 	}
 End
 
+=======
+>>>>>>> origin/louis
 
 
 Procedure overtake(power, car2Power) 
@@ -206,7 +321,7 @@ Procedure overtake(power, car2Power)
 	call estimateSmoothGoTime(1.4,-0.3,power)
 	t2 = estimateSmoothGoTime
 
-	t3 = correctHeadingRight*0.25
+	t3 = correctHeadingRight
 	print t3
 
 	call estimateOvertakeTime(2, 2, 1.4, 1.4, car2Power, overtakingPower, t1, t2, t3,power)
@@ -235,6 +350,7 @@ Procedure estimateSmoothGoTime(deltaX,deltaZ,basePower)
 	return time
 End
 
+<<<<<<< HEAD
 //Procedure correctHeadingLeftPI(baseSpeed)
 //	kp = -0.0027
 //	ki = -0.0018
@@ -260,6 +376,46 @@ End
 //	print " ----- finished correcting heading ---- "
 //	return turn
 //End
+=======
+Procedure correctHeadingLeftPID(baseSpeed)
+	Tu = 1.8 //(s)
+	ku = 0.008
+	
+	kp = ku*0.6
+	ki = kp/Tu*2
+	kd = kp*Tu*0.125
+
+	errSum = 0
+	lastInput = leftAngle
+
+	dt = 100
+	turn = 0
+	print " ----- correcting heading --------"
+	while(Math.Abs (leftAngle) > 1)
+	{
+		dt = 100
+		error = 0-leftAngle
+		errSum += error*0.1
+		dInput = leftAngle - lastInput
+		change = kp * error + ki* errSum - kd*dInput
+		lastInput = leftAngle
+		
+		if(change > 0.1)
+			change = 0.1
+		if (change < (-0.1))
+			change = -0.1
+		print turn + ". err= " +error +" => update rightPower:  " +change
+//		base1.Go(baseSpeed-change,baseSpeed+change)
+		base1.Go(-change,+change)
+		wait dt
+		turn = turn +1
+	}
+	t = turn*dt
+	print "==> leftAngle: " +leftAngle + ", time spent: " + t + " (ms)"
+	print " ----- finished correcting heading ---- "
+	return t
+End
+>>>>>>> origin/louis
 
 Procedure correctHeadingLeft(baseSpeed)
 	k2 = -0.1/30
@@ -277,7 +433,7 @@ Procedure correctHeadingLeft(baseSpeed)
 	}
 	print turn + ". leftAngle: " +leftAngle
 	print " ----- finished correcting heading ---- "
-	return turn
+	return turn*0.25
 End
 
 Procedure correctHeadingRight(baseSpeed)
@@ -296,12 +452,12 @@ Procedure correctHeadingRight(baseSpeed)
 	}
 	print turn + ". rightAngle: " +rightAngle
 	print " ----- finished correcting heading ---- "
-	return turn
+	return turn*0.25
 End
 
 Procedure smoothGoTo(deltaX, deltaZ,basePower)
 	print "-----------------------------------------------------------"
-	print "Going smoothly to: " + deltaX + " --- " + deltaZ
+	print "Going smoothly to: " + deltaX + " --- " + deltaZ + " ---- Power: " + basePower
 	orig_heading = compass_reading
 	smTemp = Math.Abs((deltaX*deltaX*1.0 + deltaZ*deltaZ*1.0) / (2*CarWidth*deltaZ*1.0))
 	target_heading = Math.Abs( Math.Asin( 2*deltaX*deltaZ*1.0 / (deltaX*deltaX*1.0 + deltaZ*deltaZ*1.0) ) / (2*Math.PI))  - HeadingTole
@@ -466,11 +622,22 @@ Procedure proc2
 	}
 
 	if(value.Pressed[6]){
+<<<<<<< HEAD
 		call correctHeadingLeft(2)
 		base1.Stop()
 	}
 	if(value.Pressed[7])
 		base1.Turn(60,0.5)
+=======
+		call correctHeadingLeftPID(0.5)
+		base1.Stop()
+		//base1.Go(0.1,0.1)
+	}
+	if(value.Pressed[7])
+		base1.Turn(30,0.5)
+	if(value.Pressed[8])
+		call execute(0.7)
+>>>>>>> origin/louis
 End
 
 Procedure  proc1
