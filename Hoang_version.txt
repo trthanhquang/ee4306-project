@@ -1,4 +1,4 @@
-DesktopJoystick    joystick1
+﻿DesktopJoystick    joystick1
 	/Procedure_UpdateAxes:proc1
 	/Procedure_UpdateButtons:proc2
 StartSimulationEngine  "SimState/basicsim.xml"
@@ -26,7 +26,7 @@ AddNewEntity Wall /Position: 0 0 0
 //Vehicle 1
 AddDifferentialDriveEntity    base1
 	/Orientation:0    -90.0    0
-	/Position:0    0    -0.5
+	/Position:0    0    0.5
 	/Mass: 10
 AddLaserRangeFinderEntity    lrf_front
 	/Position:0  0.15  -0.25
@@ -101,11 +101,11 @@ tmax = 0 // time car 2 runs at max speed
 safe_distance = 0
 rangeData = Util.CreateArrayDouble(361)
 
-wait 5000
-base1.Go(0.1,0.1)
-wait 5000
-call scanForPlanes(0, 361);
-base1.Stop()
+//wait 5000
+//base1.Go(0.1,0.1)
+//wait 5000
+//call scanForPlanes(0, 361);
+//base1.Stop()
 
 Procedure test1
 	array1 = Util.CreateArrayDouble(10)
@@ -276,6 +276,11 @@ Procedure scanForPlanes(lower_bound, upper_bound)
 	dir_dist = Util.CreateArrayDouble(10);
 	// real distance to planes
 	real_dist = Util.CreateArrayDouble(10);
+	
+	//indexes
+	planeStart = Util.CreateArrayDouble(10);
+	planeEnd = Util.CreateArrayDouble(10);
+
 	// angle to planes
 	plane_angle = Util.CreateArrayDouble(10);
 	array_index = 0;
@@ -342,6 +347,9 @@ Procedure scanForPlanes(lower_bound, upper_bound)
 					print "second_range: " + localRangeData[second_index]
 					print "last_index: " + last_index;	
 					print "last_range: " + localRangeData[last_index]
+					
+					planeStart[array_index] = first_index
+					planeEnd[array_index] = last_index
 
 					// compute the perpendicular distance (dir_dist)
 					distance = localRangeData[first_index] * localRangeData[second_index] * Math.Sin( Math.PI / 360.0);
@@ -356,8 +364,12 @@ Procedure scanForPlanes(lower_bound, upper_bound)
 					// compute the angle to the planes
 					bisector = 2.0 * localRangeData[first_index] * localRangeData[last_index] * Math.Cos ((last_index - first_index) * Math.PI / 720)
 					bisector = bisector / (localRangeData[first_index] + localRangeData[last_index])
+									
 					print "bisector: " + bisector;
-					bh_angle = Math.Acos (distance / bisector);
+					div = distance/bisector;
+					if(div > 1)
+						div = 1
+					bh_angle = Math.Acos (div);
 					if (localRangeData[last_index] < localRangeData[first_index]) {
 						bh_angle = -bh_angle;
 					}
@@ -381,19 +393,17 @@ Procedure scanForPlanes(lower_bound, upper_bound)
 			}
 		}
 	}
-	print "---------dir_dist--------------"
+	print "---------Plane Angle--------------"
 	for (i = 0; i < 10; i++) {
-		print dir_dist[i]
+		if(real_dist[i]!=0)
+			print "plane: (" +planeStart[i] +", " + planeEnd[i]+ ") plane_angle = "+ plane_angle[i] 	
 	}
-	print "---------real_dist-------------"
+	print "---------Plane Distance--------------"
 	for (i = 0; i < 10; i++) {
-		print real_dist[i]
+		if(real_dist[i]!=0)
+			print "plane: (" +planeStart[i] +", " + planeEnd[i]+ ") dir_dist = " + dir_dist[i] + ", real_dist = "+ real_dist[i]
 	}
-	print "---------plane_angle-----------"
-	for (i = 0; i < 10; i++) {
-		print plane_angle[i]
-	}
-	
+
 End
 
 //--------------------------------------------------------------------------------------------------//
@@ -411,6 +421,11 @@ Procedure proc2
 	else
 		robot2 = false
 	
+	if(value.Pressed[4]){
+		print "------ Scan For Plane ------"
+		call scanForPlanes(0, 361);
+	}
+
 End
 
 Procedure  proc1
@@ -429,6 +444,7 @@ Procedure  proc1
 	{
 		base2.Go(leftPower,rightPower)
 	}
+	
 End
 
 //----------------------------------------------------------------------------------------------------
