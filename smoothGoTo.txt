@@ -1,4 +1,4 @@
-﻿DesktopJoystick    joystick1
+DesktopJoystick    joystick1
 	/Procedure_UpdateAxes:proc1
 	/Procedure_UpdateButtons:proc2
 StartSimulationEngine  "SimState/basicsim.xml"
@@ -120,11 +120,11 @@ print "1"
 wait 1000
 print "GO!"
 
-base2.Go(0.2)
+base2.Go(0.3)
 base3.Go(0.3)
 base4.Go(0.3)
 base5.Go(0.3)
-call execute(0.5)
+call execute(0.6)
 
 Procedure execute(basePower)
 {
@@ -161,18 +161,22 @@ Procedure execute(basePower)
 			print "followingPower: " + followingPower
 			d1 = leftCarDist
 			d2 = 1.5 //(m)
+
 			//Overtaking evaluation:
 			call estimateSmoothGoTime(1.4,0.3,basePower)
 			t1 = estimateSmoothGoTime
 			call estimateSmoothGoTime(1.4,-0.5,basePower)
 			t2 = estimateSmoothGoTime
-			t3 = 1.5 //settling time for correcting heading (second)
+			t3 = 1 //settling time for correcting heading (second)
+			d3 = t3 * basePower * kv
+			print "d3 = " + d3
+
 			overtakingPower = 1.5*basePower
 			call estimateOvertakingTime(d1, d2, 1.4, 1.4, car2Power, overtakingPower, t1, t2, t3,basePower)
 			overtakingTime = estimateOvertakingTime
-			
+
 			totalTimeRequired = t1+t2+t3+overtakingTime
-			totalDistanceRequired = 1+ 1+1.5*basePower*kv +overtakingTime*overtakingPower*kv
+			totalDistanceRequired = d1+ d2+d3 +overtakingTime*overtakingPower*kv
 			
 			print "totalDistanceRequired: " + totalDistanceRequired
 			print "totalTimeRequired: " + totalTimeRequired
@@ -230,39 +234,47 @@ Procedure straightModeLeft(distToWall, safeDistance, power)
 	}
 End
 
+Procedure overtake(d1,d2, basePower, car2Power, overtakingPower) 
+	call smoothGoTo(1.4,0.3,basePower)
+	call correctHeadingRight(basePower)
 
-
-Procedure overtake(d1,d2, power, car2Power, overtakingPower) 
-
-	call smoothGoTo(1.4,0.3,power)
-	call correctHeadingRight(power)
-
-	call estimateSmoothGoTime(1.4,0.3,power)
+	call estimateSmoothGoTime(1.4,0.3,basePower)
 	t1 = estimateSmoothGoTime
 
-	call estimateSmoothGoTime(1.4,-0.5,power)
+	call estimateSmoothGoTime(1.4,-0.5,basePower)
 	t2 = estimateSmoothGoTime
-
+	print "actual t1 = " +t1+",t2 = "+ t2
 	t3 = correctHeadingRight
-	print t3
 
-	call estimateOvertakingTime(d1, d2, 1.4, 1.4, car2Power, overtakingPower, t1, t2, t3,power)
-	print estimateOvertakingTime
+	call estimateOvertakingTime(d1, d2, 1.4, 1.4, car2Power, overtakingPower, t1, t2, t3,basePower)
+	print "overtaking Time = " + estimateOvertakingTime
+	
+	totalTime = t1+t2+t3+estimateOvertakingTime
+	print "total Time = " + totalTime
+
 	tmax = Util.ToInt(estimateOvertakingTime*1000 )
 	if (tmax > 0){
 		base1.Go(overtakingPower)
 		wait tmax
 	}
-	call smoothGoTo(1.4,-0.3, power)
+	call smoothGoTo(1.4,-0.5, basePower)
 End
 
 Procedure estimateOvertakingTime(d1,d2,dx1,dx2,P0,Pmax,t1,t2,t3,Pbase)
 	V0 = P0 * kv
 	Vmax = Pmax*kv
 	d3 = t3 * Pbase*kv
+	print "t3 = "+ t3 +", d3 = " + d3
 
 	dmax = d1 + d2 + V0*(t1+t2+t3) - dx1 - dx2 - d3
 	tmax = dmax/(Vmax - V0)
+	print "dmax = " + dmax + ",tmax = "+ tmax
+	if( tmax < 0)
+	{
+		print "overtakingTime <0! Either d2 is too small or the vehicle takes too long to correct heading"
+		print "return 0"
+		tmax = 0;
+	}
 	return tmax
 End
 
@@ -597,7 +609,7 @@ Procedure scanForPlanes(lower_bound, upper_bound)
 
 	for (i = 0; i < array_index; i++) {
 		plane_angle[i] = Util.ToInt(plane_angle[i])
-//		print "index "+i+".  plane: (" +planeStart[i] +", " + planeEnd[i]+ "),  p_dist = " + p_dist[i]
+		print "index "+i+".  plane: (" +planeStart[i] +", " + planeEnd[i]+ "),  p_dist = " + p_dist[i]
 	}
 		
 	Util.ArrayCopy(planeStart, planeStartingIndex, 10)
