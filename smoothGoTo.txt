@@ -1,4 +1,4 @@
-DesktopJoystick    joystick1
+﻿DesktopJoystick    joystick1
 	/Procedure_UpdateAxes:proc1
 	/Procedure_UpdateButtons:proc2
 StartSimulationEngine  "SimState/basicsim.xml"
@@ -188,6 +188,12 @@ Procedure execute(basePower)
 			print "rightCar Speed: " + rightCarSpeed + "(power = " + rightCarPower +")"
 			print "rightCar Dx: " + rightCarDx
 			
+			if(rightCarSpeed > 0)
+			{
+				print "!!!!! ERROR in detecting rightCarSpeed !!!!!!!"
+				continue
+			}
+
 			idealDist = totalDistanceRequired + rightCarDx
 			print "idealDist: " + idealDist
 			print "rightCarDist: " + rightCarDist
