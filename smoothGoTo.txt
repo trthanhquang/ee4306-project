@@ -1,4 +1,4 @@
-﻿DesktopJoystick    joystick1
+DesktopJoystick    joystick1
 	/Procedure_UpdateAxes:proc1
 	/Procedure_UpdateButtons:proc2
 StartSimulationEngine  "SimState/basicsim.xml"
@@ -46,7 +46,7 @@ AddDifferentialDriveEntity    base2
 //Vehicle 3
 AddDifferentialDriveEntity    base3
 	/Orientation:0    90.0    0
-	/Position: 20	0   0.4
+	/Position: 15	0   0.4
 
 //Vehicle 4
 AddDifferentialDriveEntity    base4
@@ -120,11 +120,11 @@ print "1"
 wait 1000
 print "GO!"
 
-base2.Go(0.3)
+base2.Go(0.2)
 base3.Go(0.3)
 base4.Go(0.3)
 base5.Go(0.3)
-call execute(0.6)
+call execute(0.5)
 
 Procedure execute(basePower)
 {
