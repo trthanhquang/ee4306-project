@@ -1,32 +1,37 @@
-DesktopJoystick    joystick1
+﻿DesktopJoystick    joystick1
 	/Procedure_UpdateAxes:proc1
 	/Procedure_UpdateButtons:proc2
 StartSimulationEngine  "SimState/basicsim.xml"
 UpdateCameraView
-	/EyePosition:10 10 10  	/LookAtPoint:0 0 0
+	/EyePosition:-15 30 0  	/LookAtPoint:0 0 0
 
-
-AddNewEntity    ent2  	/Position:0  0.5  0
-
-AddConvexMeshShape  
-	/Mass:0.1
+AddNewEntity    Wall
 	/Position:0    1    0
-    /Mesh:"closed_circuit_1.obj"
+	AddConvexMeshShape  inloop
+		/Mass:10000
+		/Position:1.6    0    1.6
+	    /Mesh:"closed_circuit_1_inloop.obj"
+	AddConvexMeshShape  outloop
+		/Mass:10000
+		/Position:0    0    0
+	    /Mesh:"closed_circuit_1_outloop.obj"
 
 //Vehicle 1
-AddDifferentialDriveEntity    car1
-	/Orientation:0    -90    0
-	/Position:21.4    0    5
-	/Mass: 10
-AddLaserRangeFinderEntity    lrf_front
-	/Position:0  0.15  -0.25
-	/ParentEntity:car1
-	/Procedure_SensorNotify: laser_read
-
-AddCompassEntity    compass1
-	/Position:-0.1  0.15  -0.25
-	/ParentEntity:car1
-	/Procedure_SensorNotify: compass_read
+AddNewEntity   Cars  /Position:0  0  0
+	AddDifferentialDriveEntity    car1
+		/ParentEntity: Cars	
+		/Orientation:0    -90    0
+		/Position:21.4    1    5
+		/Mass: 10
+	AddLaserRangeFinderEntity    lrf_front
+		/Position:0  0.15  -0.25
+		/ParentEntity:car1
+		/Procedure_SensorNotify: laser_read
+	
+	AddCompassEntity    compass1
+		/Position:-0.1  0.15  -0.25
+		/ParentEntity:car1
+		/Procedure_SensorNotify: compass_read
 
 FlushScript 
 
