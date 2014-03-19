@@ -10,7 +10,7 @@ ImportScript
 
 //Vehicle 1
 	AddDifferentialDriveEntity    car1
-		/Orientation:0    -180    0
+		/Orientation:0    0    0
 		/Position: 9   0    1
 		/Mass: 10
 	AddLaserRangeFinderEntity    lrf_front
@@ -85,7 +85,7 @@ print "1"
 wait 1000
 print "GO!"
 
-call execute(0.5)
+call testRun();
 
 Procedure execute(basePower)
 {
@@ -93,7 +93,7 @@ Procedure execute(basePower)
 		//assumption: currently at middle of land (leftDist = 0.5)
 		if(frontDist > 2){
 			print "freeway!"
-			call straightModeLeft(0.7,2,basePower) //exit if frontDist < 3m
+			call stroaightModeLeft(0.7,2,basePower) //exit if frontDist < 3m
 		}
 		print "Detected obstacle at " + frontDist + " ahead with dp = " +dpFront
 		print "Going to checking position... " //(leftDist = 0.75)
@@ -173,6 +173,44 @@ Procedure execute(basePower)
 		}
 	}
 }
+
+Procedure testRun()
+	//call wallFollow(0.4, 0.5);
+	while (true) {
+		call wallFollow(0.4, 1);
+//		wait 10
+	}
+End
+
+Procedure wallFollow(goalDist, basePower)
+	Kh = 1.0 / 90.0;
+	Kd = 1.0 / 90.0;
+	LRatio = 1.0;
+	RRatio = 1.0;
+	angDiff = 1.0;
+	distDiff = 1.0;
+	leftPower = 0.0;
+	rightPower = 0.0;
+
+	angDiff = Kh*leftAngle;
+	LRatio = LRatio + angDiff;
+	RRatio = RRatio - angDiff; 
+	
+	distDiff = leftDist - goalDist;
+	if (distDiff > 0) { 
+		RRatio = RRatio + Kd*distDiff;
+	}
+	else{
+		distDiff = -distDiff;
+		LRatio = LRatio + Kd*distDiff;
+	}
+
+	leftPower = 1.0 * LRatio * basePower;
+	rightPower = 1.0 * RRatio * basePower;
+	
+	print "Power: " + leftPower + "      " + rightPower;
+	car1.Go(leftPower, rightPower);
+End
 
 Procedure straightModeLeft(distToWall, safeDistance, power)
 	while(true)
