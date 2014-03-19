@@ -1,27 +1,17 @@
-﻿DesktopJoystick    joystick1
-	/Procedure_UpdateAxes:proc1
-	/Procedure_UpdateButtons:proc2
-StartSimulationEngine  "SimState/basicsim.xml"
-UpdateCameraView
-	/EyePosition:-15 30 0  	/LookAtPoint:0 0 0
+﻿//DesktopJoystick    joystick1
+//	/Procedure_UpdateAxes:proc1
+//	/Procedure_UpdateButtons:proc2
 
-AddNewEntity    Wall
-	/Position:0    1    0
-	AddConvexMeshShape  inloop
-		/Mass:10000
-		/Position:1.6    0    1.6
-	    /Mesh:"closed_circuit_1_inloop.obj"
-	AddConvexMeshShape  outloop
-		/Mass:10000
-		/Position:0    0    0
-	    /Mesh:"closed_circuit_1_outloop.obj"
+UpdateCameraView  
+	/EyePosition:0 40 -20  	/LookAtPoint:0 0 0
+
+ImportScript  
+	/FileName:"Script/ee4306-project/circle_wall.txt"
 
 //Vehicle 1
-AddNewEntity   Cars  /Position:0  0  0
 	AddDifferentialDriveEntity    car1
-		/ParentEntity: Cars	
-		/Orientation:0    -90    0
-		/Position:21.4    1    5
+		/Orientation:0    -180    0
+		/Position: 9   0    1
 		/Mass: 10
 	AddLaserRangeFinderEntity    lrf_front
 		/Position:0  0.15  -0.25
@@ -85,6 +75,7 @@ middlePoint = 0
 kv = 1.56
 
 
+WaitForEntityCreation    car1
 wait 1000
 print "3"
 wait 1000
@@ -94,11 +85,7 @@ print "1"
 wait 1000
 print "GO!"
 
-base2.Go(0.2)
-base3.Go(0.3)
-base4.Go(0.3)
-base5.Go(0.3)
-//call execute(0.5)
+call execute(0.5)
 
 Procedure execute(basePower)
 {
@@ -106,7 +93,7 @@ Procedure execute(basePower)
 		//assumption: currently at middle of land (leftDist = 0.5)
 		if(frontDist > 2){
 			print "freeway!"
-			call straightModeLeft(0.5,2,basePower) //exit if frontDist < 3m
+			call straightModeLeft(0.7,2,basePower) //exit if frontDist < 3m
 		}
 		print "Detected obstacle at " + frontDist + " ahead with dp = " +dpFront
 		print "Going to checking position... " //(leftDist = 0.75)
@@ -190,7 +177,7 @@ Procedure execute(basePower)
 Procedure straightModeLeft(distToWall, safeDistance, power)
 	while(true)
 	{
-		if(Math.Abs (leftAngle) > 1)
+		if(Math.Abs (leftAngle) > 2)
 			call correctHeadingLeft(power)
 		if(frontDist > safeDistance){
 			if(Math.Abs (leftDist - distToWall) > 0.05)
@@ -200,7 +187,7 @@ Procedure straightModeLeft(distToWall, safeDistance, power)
 				//dx = Math.Abs (40*dz)
 				call smoothGoTo(2,dz,power)
 			}
-			if(Math.Abs (leftAngle) > 1)
+			if(Math.Abs (leftAngle) > 2)
 				call correctHeadingLeft(power)
 
 			car1.Go(power)
@@ -264,44 +251,6 @@ Procedure estimateSmoothGoTime(deltaX,deltaZ,basePower)
 	return time
 End
 
-Procedure correctHeadingLeftPID(baseSpeed)
-	Tu = 1.8 //(s)
-	ku = 0.008
-	
-	kp = ku*0.6
-	ki = kp/Tu*2
-	kd = kp*Tu*0.125
-
-	errSum = 0
-	lastInput = leftAngle
-
-	dt = 100
-	turn = 0
-	print " ----- correcting heading --------"
-	while(Math.Abs (leftAngle) > 1)
-	{
-		dt = 100
-		error = 0-leftAngle
-		errSum += error*0.1
-		dInput = leftAngle - lastInput
-		change = kp * error + ki* errSum - kd*dInput
-		lastInput = leftAngle
-		
-		if(change > 0.1)
-			change = 0.1
-		if (change < (-0.1))
-			change = -0.1
-		print turn + ". err= " +error +" => update rightPower:  " +change
-		car1.Go(-change,+change)
-		wait dt
-		turn = turn +1
-	}
-	t = turn*dt
-	print "==> leftAngle: " +leftAngle + ", time spent: " + t + " (ms)"
-	print " ----- finished correcting heading ---- "
-	return t
-End
-
 Procedure correctHeadingLeft(baseSpeed)
 	k2 = -0.1/30
 	car1.Go(baseSpeed)
@@ -320,6 +269,7 @@ Procedure correctHeadingLeft(baseSpeed)
 	print " ----- finished correcting heading ---- "
 	return turn*0.25
 End
+
 
 Procedure correctHeadingRight(baseSpeed)
 	k2 = -0.1/30

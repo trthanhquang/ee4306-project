@@ -1,11 +1,11 @@
-﻿StartSimulationEngine  "SimState/basicsim.xml"
+StartSimulationEngine  "SimState/basicsim.xml"
 
 AddNewEntity  OuterWall   /Position:0  0.2  0
-	r = 20
-	NoBlock = 50
+	r = 10
+	NoBlock = 64
 	blockBase = 2.0* Math.PI * r /NoBlock
 	
-	for (i = 0; i < NoBlock; i++)
+	for (i = 0; i <= NoBlock/2; i++)
 	{
 		degrees = 360.0/(NoBlock*1.0) * i
 		radian = Math.PI  * degrees / 180.0
@@ -16,12 +16,33 @@ AddNewEntity  OuterWall   /Position:0  0.2  0
 			/Orientation:0 {-degrees}  0
 	}
 
+	len = 30
+	AddBoxShape
+		/Dimensions: 0.2 0.4 {len} /Mass: 100000
+		/Position: {r} 0 -{len/2}
+		/Orientation: 0 0 0
+	AddBoxShape
+		/Dimensions: 0.2 0.4 {len} /Mass: 100000
+		/Position: -{r} 0 -{len/2}
+		/Orientation: 0 0 0
+
+	for (i = NoBlock/2; i <= NoBlock; i++)
+	{
+		degrees = 360.0/(NoBlock*1.0) * i
+		radian = Math.PI  * degrees / 180.0
+		x = r * Math.Cos(radian)
+		z = r * Math.Sin(radian) - len
+	 	AddBoxShape  
+	 		/Dimensions: 0.2 0.4  {blockBase}   /Mass:1000 /Position:{x} 0  {z}
+			/Orientation:0 {-degrees}  0
+	}
+
 AddNewEntity  InnerWall   /Position:0  0.2  0
-	r = 20-1.6
-	NoBlock = 50
+	r = 8
+	NoBlock = 64
 	blockBase = 2.0* Math.PI * r /NoBlock
 	
-	for (i = 0; i < NoBlock; i++)
+	for (i = 0;  i <= NoBlock/2; i++)
 	{
 		degrees = 360.0/(NoBlock*1.0) * i
 		radian = Math.PI  * degrees / 180.0
@@ -33,26 +54,25 @@ AddNewEntity  InnerWall   /Position:0  0.2  0
 			/Mass:1000
 	}
 
-WaitForEntityCreation
+	len = 30
+	AddBoxShape
+		/Dimensions: 0.2 0.4 {len} /Mass: 100000
+		/Position: {r} 0 -{len/2}
+		/Orientation: 0 0 0
+	AddBoxShape
+		/Dimensions: 0.2 0.4 {len} /Mass: 100000
+		/Position: -{r} 0 -{len/2}
+		/Orientation: 0 0 0
 
-//Vehicle 1
-AddNewEntity   Cars  
-	/Position: 19  0  0
-	AddDifferentialDriveEntity    car1
-`		/Orientation:0    -90    0
-		/Position:21.4    0.1    1
-		/Mass: 10
-	AddLaserRangeFinderEntity    lrf_front
-		/Position:0  0.15  -0.25
-		/ParentEntity:car1
-		/Procedure_SensorNotify: laser_read
-	
-	AddCompassEntity    compass1
-		/Position:-0.1  0.15  -0.25
-		/ParentEntity:car1
-		/Procedure_SensorNotify: compass_read
+	for (i = NoBlock/2; i <= NoBlock; i++)
+	{
+		degrees = 360.0/(NoBlock*1.0) * i
+		radian = Math.PI  * degrees / 180.0
+		x = r * Math.Cos(radian)
+		z = r * Math.Sin(radian) - len
+	 	AddBoxShape  
+	 		/Dimensions: 0.2 0.4  {blockBase}   /Mass:1000 /Position:{x} 0  {z}
+			/Orientation:0 {-degrees}  0
+	}
 
 FlushScript 
-
-
-SaveSceneAs    "SimState/milestone2.xml"
