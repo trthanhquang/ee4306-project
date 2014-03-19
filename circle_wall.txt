@@ -1,0 +1,58 @@
+﻿StartSimulationEngine  "SimState/basicsim.xml"
+
+AddNewEntity  OuterWall   /Position:0  0.2  0
+	r = 20
+	NoBlock = 50
+	blockBase = 2.0* Math.PI * r /NoBlock
+	
+	for (i = 0; i < NoBlock; i++)
+	{
+		degrees = 360.0/(NoBlock*1.0) * i
+		radian = Math.PI  * degrees / 180.0
+		x = r * Math.Cos(radian)
+		z = r * Math.Sin(radian)
+	 	AddBoxShape  
+	 		/Dimensions: 0.2 0.4  {blockBase}   /Mass:1000 /Position:{x} 0  {z}
+			/Orientation:0 {-degrees}  0
+	}
+
+AddNewEntity  InnerWall   /Position:0  0.2  0
+	r = 20-1.6
+	NoBlock = 50
+	blockBase = 2.0* Math.PI * r /NoBlock
+	
+	for (i = 0; i < NoBlock; i++)
+	{
+		degrees = 360.0/(NoBlock*1.0) * i
+		radian = Math.PI  * degrees / 180.0
+		x = r * Math.Cos(radian)
+		z = r * Math.Sin(radian)
+	 	AddBoxShape  
+	 		/Dimensions: 0.2 0.4  {blockBase}   /Mass:1000 /Position:{x} 0  {z}
+			/Orientation:0 {-degrees}  0
+			/Mass:1000
+	}
+
+WaitForEntityCreation
+
+//Vehicle 1
+AddNewEntity   Cars  
+	/Position: 19  0  0
+	AddDifferentialDriveEntity    car1
+`		/Orientation:0    -90    0
+		/Position:21.4    0.1    1
+		/Mass: 10
+	AddLaserRangeFinderEntity    lrf_front
+		/Position:0  0.15  -0.25
+		/ParentEntity:car1
+		/Procedure_SensorNotify: laser_read
+	
+	AddCompassEntity    compass1
+		/Position:-0.1  0.15  -0.25
+		/ParentEntity:car1
+		/Procedure_SensorNotify: compass_read
+
+FlushScript 
+
+
+SaveSceneAs    "SimState/milestone2.xml"
