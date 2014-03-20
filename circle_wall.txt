@@ -1,7 +1,7 @@
 StartSimulationEngine  "SimState/basicsim.xml"
 
 AddNewEntity  OuterWall   /Position:0  0.2  0
-	r = 10
+	r = 7
 	NoBlock = 64
 	blockBase = 2.0* Math.PI * r /NoBlock
 	
@@ -16,7 +16,7 @@ AddNewEntity  OuterWall   /Position:0  0.2  0
 			/Orientation:0 {-degrees}  0
 	}
 
-	len = 30
+	len = 10
 	AddBoxShape
 		/Dimensions: 0.2 0.4 {len} /Mass: 100000
 		/Position: {r} 0 -{len/2}
@@ -38,7 +38,7 @@ AddNewEntity  OuterWall   /Position:0  0.2  0
 	}
 
 AddNewEntity  InnerWall   /Position:0  0.2  0
-	r = 8
+	r = 5
 	NoBlock = 64
 	blockBase = 2.0* Math.PI * r /NoBlock
 	
@@ -54,7 +54,7 @@ AddNewEntity  InnerWall   /Position:0  0.2  0
 			/Mass:1000
 	}
 
-	len = 30
+	len = 10
 	AddBoxShape
 		/Dimensions: 0.2 0.4 {len} /Mass: 100000
 		/Position: {r} 0 -{len/2}
