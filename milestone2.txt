@@ -8,11 +8,14 @@ UpdateCameraView
 ImportScript  
 	/FileName:"Script/ee4306-project/circle_wall.txt"
 
+ImportScript
+	/FileName:"Script/ee4306-project/car2.txt"
+
 //Vehicle 1
-	AddDifferentialDriveEntity    car1
-		/Orientation:0    180    0
-		/Position: 6   0    -5
-		/Mass: 10
+AddDifferentialDriveEntity    car1
+	/Orientation:0    0    0
+	/Position: 5.5   0    0
+	/Mass: 10
 	AddLaserRangeFinderEntity    lrf_front
 		/Position:0  0.15  -0.25
 		/ParentEntity:car1
@@ -22,6 +25,7 @@ ImportScript
 		/Position:-0.1  0.15  -0.25
 		/ParentEntity:car1
 		/Procedure_SensorNotify: compass_read
+
 
 FlushScript 
 
@@ -90,9 +94,17 @@ print "1"
 wait 1000
 print "GO!"
 
+
+
 //call initZwaypoint()
 call initNormalwaypoint()
-call runAround() 
+call execute()
+
+Procedure execute()    	/Concurrent:true
+{
+	call runAround()
+	call runAround2() 
+}
 
 Procedure getWaypointDist(index)
 {
@@ -147,6 +159,7 @@ Procedure initNormalwaypoint(){
 	waypoint_Z[5]= 5.5
 }
 End 
+
 Procedure getWaypointDirection(index)
 {
 	pX = car1.Position.X
@@ -200,7 +213,7 @@ Procedure runAround()
 			while (getWaypointDist > 1)
 			{
 				//print "distance to waypoint "+i+": " + getWaypointDist
-				call wallFollow(0.6, 0.7)
+				call wallFollow(0.5, 1)
 				wait 10
 				call getWaypointDist(i)
 			}

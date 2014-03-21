@@ -1,6 +1,0 @@
-StartSimulationEngine  "SimState/basicsim.xml"
-AddNewEntity    ABC
-                /Position:0 0 0
-AddConvexMeshShape
-                /Mass:100
-                /Mesh:"closed_circuit_1.obj"

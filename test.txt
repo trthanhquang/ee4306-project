@@ -1,3 +1,0 @@
-﻿AddGraphicSpriteEntity    sprite1
- 
-sprite1.SpriteLoadScript("filepath/trackname.txt")
