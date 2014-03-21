@@ -10,8 +10,8 @@ ImportScript
 
 //Vehicle 1
 	AddDifferentialDriveEntity    car1
-		/Orientation:0    90    0
-		/Position: 5.5   0    0
+		/Orientation:0    180    0
+		/Position: 6   0    -5
 		/Mass: 10
 	AddLaserRangeFinderEntity    lrf_front
 		/Position:0  0.15  -0.25
@@ -76,20 +76,9 @@ middlePoint = 0
 kv = 1.56
 
 //waypoints
-waypoint_X = Util.CreateArrayDouble(4)
-waypoint_Z = Util.CreateArrayDouble(4)
+waypoint_X = Util.CreateArrayDouble(6)
+waypoint_Z = Util.CreateArrayDouble(6)
 
-waypoint_X[0]=5.5
-waypoint_Z[0]=0
-
-waypoint_X[1]=5.5
-waypoint_Z[1]=-10
-
-waypoint_X[2]= -5.5
-waypoint_Z[2]= -10
-
-waypoint_X[3]= -5.5
-waypoint_Z[3]= 0
 
 WaitForEntityCreation    car1
 wait 1000
@@ -101,6 +90,8 @@ print "1"
 wait 1000
 print "GO!"
 
+//call initZwaypoint()
+call initNormalwaypoint()
 call runAround() 
 
 Procedure getWaypointDist(index)
@@ -115,7 +106,47 @@ Procedure getWaypointDist(index)
 }
 End
 
+Procedure initZwaypoint(){
+	waypoint_X[0]=5.5
+	waypoint_Z[0]=0
+	
+	waypoint_X[1]=5.5
+	waypoint_Z[1]=-10
+	
+	waypoint_X[2]=0
+	waypoint_Z[2]=5.5
+	
+	waypoint_X[3]= -5.5
+	waypoint_Z[3]= -10
+	
+	waypoint_X[4]= -5.5
+	waypoint_Z[4]= 0
+	
+	waypoint_X[5]= 0
+	waypoint_Z[5]= -15.5
+}
+End 
 
+Procedure initNormalwaypoint(){
+	waypoint_X[0]=5.5
+	waypoint_Z[0]=0
+	
+	waypoint_X[1]=5.5
+	waypoint_Z[1]=-10
+	
+	waypoint_X[2]=0
+	waypoint_Z[2]=-15.5
+	
+	waypoint_X[3]= -5.5
+	waypoint_Z[3]= -10
+	
+	waypoint_X[4]= -5.5
+	waypoint_Z[4]= 0
+	
+	waypoint_X[5]= 0
+	waypoint_Z[5]= 5.5
+}
+End 
 Procedure getWaypointDirection(index)
 {
 	pX = car1.Position.X
@@ -125,26 +156,59 @@ Procedure getWaypointDirection(index)
 	
 	vX = wX - pX
 	vZ = wZ - pZ
-	th = Math.Atan2 (vX,vZ)*180/Math.PI
-	dth = th - (compassRaw / Math.PI * 180)
-	print "vX: " +vX +",vZ: "+vZ+", th = "+th + ", dth = "+dth
-	return th
+	th = (Math.Atan (-vX/vZ)*180/Math.PI)
+	if(vZ > 0)
+		if(vX > 0)
+			th = th +180
+		else
+			th = th - 180
+
+	compass = (compassRaw / Math.PI * 180)
+	dth = th - compass
+	if (dth > 180)
+		dth = dth - 360
+	if (dth < (-180))
+		dth = dth + 360
+
+	pX = Util.ToInt(10.0* pX)/10.0
+	pZ = Util.ToInt(10.0* pZ)/10.0
+	vX = Util.ToInt(10.0* vX)/10.0
+	vZ = Util.ToInt(10.0* vZ)/10.0
+	th = Util.ToInt(10.0* th)/10.0
+	compass = Util.ToInt(10.0* compass)/10.0
+	dth = Util.ToInt(10.0* dth)/10.0
+	print "pX: "+pX + ",pZ: "+pZ+ ", vX: " +vX +",vZ: "+vZ+", th = "+th + ",compass: "+ compass+", dth = "+dth
+	return dth
 {
 End
 
 Procedure runAround()
 	while (true) {
-		for( i= 0 ; i< 4; i++){
-			print "getting to waypoint "+i
+		for( i= 0 ; i< 6; i++){
+			print "------------------------------------------------"
+			print "getting to waypoint "+i+" (" + waypoint_X[i]+","+waypoint_Z[i]+")"
+			call getWaypointDirection(i)
+
+			if(Math.Abs (getWaypointDirection) > 120){
+				print "Change direction"
+				car1.Stop()
+				wait 1000
+				car1.Turn(-150,0.2)
+			}
+
 			call getWaypointDist(i)
-			while (getWaypointDist > 0.5)
+			while (getWaypointDist > 1)
 			{
 				//print "distance to waypoint "+i+": " + getWaypointDist
-				call wallFollow(0.5, 1.5)
+				call wallFollow(0.6, 0.7)
 				wait 10
 				call getWaypointDist(i)
 			}
-			print "reached waypoint "+i+" (" + waypoint_X[i]+","+waypoint_Z[i]+")"
+			pX = car1.Position.X
+			pZ = car1.Position.Z
+			pX = Util.ToInt(1000.0* pX)/1000.0
+			pZ = Util.ToInt(1000.0* pZ)/1000.0
+			print "reached waypoint "+i+" (" + pX+","+pZ+")"
 		}
 	}
 End
