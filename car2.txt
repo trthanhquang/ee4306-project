@@ -1,13 +1,13 @@
-﻿UpdateCameraView  
-	/EyePosition:0 40 -20  	/LookAtPoint:0 0 0
+﻿//UpdateCameraView  
+//	/EyePosition:0 40 -20  	/LookAtPoint:0 0 0
 
-ImportScript  
-	/FileName:"Script/ee4306-project/circle_wall.txt"
+//ImportScript  
+//	/FileName:"Script/ee4306-project/circle_wall.txt"
 
 //Vehicle 2
 AddDifferentialDriveEntity    car2
 	/Orientation:0    180   0
-	/Position: 6.5   0    0
+	/Position: 6.5   0    -16
 	/Mass: 10
 	AddLaserRangeFinderEntity    lrf_front2
 		/Position:0  0.15  -0.25
@@ -27,11 +27,11 @@ rightDist2 = 50000
 
 
 FlushScript  
-Procedure runAround2()
+Procedure car2Go(power)
 {
 	while(true)
 	{
-		call wallFollow2(0.5,1)
+		call wallFollow2(0.5,power)
 		wait 10
 	}
 }

@@ -1,0 +1,67 @@
+﻿Procedure initWaypoint(){
+	waypoint_X[0]=6.5
+	waypoint_Z[0]=0
+	
+	waypoint_X[1]=0
+	waypoint_Z[1]=6.5
+	
+	waypoint_X[2]=-6.5
+	waypoint_Z[2]=0
+	
+	waypoint_X[3]= -6.5
+	waypoint_Z[3]= -20
+	
+	waypoint_X[4]= 0
+	waypoint_Z[4]= -26.5
+	
+	waypoint_X[5]= 6.5
+	waypoint_Z[5]= -20
+}
+End 
+
+Procedure getWaypointDist(index)
+{
+	pX = car1.Position.X
+	pZ= car1.Position.Z
+	wX = waypoint_X[index]
+	wZ = waypoint_Z[index]
+	dist = Math.Sqrt ((pX-wX)*(pX-wX) + (pZ-wZ)*(pZ-wZ))
+//	print "pX: "+pX + ", pZ: "+pZ+", wX: "+wX+", wZ: " +wZ+" --> dist: "+dist
+	return dist
+}
+End
+
+Procedure getWaypointDirection(index)
+{
+	pX = car1.Position.X
+	pZ= car1.Position.Z
+	wX = waypoint_X[index]
+	wZ = waypoint_Z[index]
+	
+	vX = wX - pX
+	vZ = wZ - pZ
+	th = (Math.Atan (-vX/vZ)*180/Math.PI)
+	if(vZ > 0)
+		if(vX > 0)
+			th = th +180
+		else
+			th = th - 180
+
+	compass = (compassRaw / Math.PI * 180)
+	dth = th - compass
+	if (dth > 180)
+		dth = dth - 360
+	if (dth < (-180))
+		dth = dth + 360
+
+	pX = Util.ToInt(10.0* pX)/10.0
+	pZ = Util.ToInt(10.0* pZ)/10.0
+	vX = Util.ToInt(10.0* vX)/10.0
+	vZ = Util.ToInt(10.0* vZ)/10.0
+	th = Util.ToInt(10.0* th)/10.0
+	compass = Util.ToInt(10.0* compass)/10.0
+	dth = Util.ToInt(10.0* dth)/10.0
+//	print "pX: "+pX + ",pZ: "+pZ+ ", vX: " +vX +",vZ: "+vZ+", th = "+th + ",compass: "+ compass+", dth = "+dth
+	return dth
+{
+End

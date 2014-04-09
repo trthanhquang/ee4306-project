@@ -1,4 +1,4 @@
-﻿DesktopJoystick    joystick1
+DesktopJoystick    joystick1
 	/Procedure_UpdateAxes:proc1
 	/Procedure_UpdateButtons:proc2
 
@@ -13,8 +13,8 @@ ImportScript
 
 //Vehicle 1
 AddDifferentialDriveEntity    car1
-	/Orientation:0    0    0
-	/Position: 5.5   0    0
+	/Orientation:0    180    0
+	/Position: 6.5   0    -10
 	/Mass: 10
 	AddLaserRangeFinderEntity    lrf_front
 		/Position:0  0.15  -0.25
@@ -94,16 +94,14 @@ print "1"
 wait 1000
 print "GO!"
 
-
-
 //call initZwaypoint()
 call initNormalwaypoint()
 call execute()
 
 Procedure execute()    	/Concurrent:true
 {
-	call runAround()
-	call runAround2() 
+	call car1Go(1)
+	call car2Go(1) 
 }
 
 Procedure getWaypointDist(index)
@@ -143,20 +141,20 @@ Procedure initNormalwaypoint(){
 	waypoint_X[0]=5.5
 	waypoint_Z[0]=0
 	
-	waypoint_X[1]=5.5
-	waypoint_Z[1]=-10
+	waypoint_X[1]=0
+	waypoint_Z[1]=5.5
 	
-	waypoint_X[2]=0
-	waypoint_Z[2]=-15.5
+	waypoint_X[2]=-5.5
+	waypoint_Z[2]=0
 	
 	waypoint_X[3]= -5.5
 	waypoint_Z[3]= -10
 	
-	waypoint_X[4]= -5.5
-	waypoint_Z[4]= 0
+	waypoint_X[4]= 0
+	waypoint_Z[4]= -15.5
 	
-	waypoint_X[5]= 0
-	waypoint_Z[5]= 5.5
+	waypoint_X[5]= 5.5
+	waypoint_Z[5]= -10
 }
 End 
 
@@ -195,7 +193,7 @@ Procedure getWaypointDirection(index)
 {
 End
 
-Procedure runAround()
+Procedure car1Go(basePower)
 	while (true) {
 		for( i= 0 ; i< 6; i++){
 			print "------------------------------------------------"
@@ -213,7 +211,7 @@ Procedure runAround()
 			while (getWaypointDist > 1)
 			{
 				//print "distance to waypoint "+i+": " + getWaypointDist
-				call wallFollow(0.5, 1)
+				call wallFollow(0.5, basePower)
 				wait 10
 				call getWaypointDist(i)
 			}

@@ -1,0 +1,216 @@
+//DesktopJoystick    joystick1
+//	/Procedure_UpdateAxes:proc1
+//	/Procedure_UpdateButtons:proc2
+
+UpdateCameraView  
+	/EyePosition:0 40 -20  	/LookAtPoint:0 0 0
+
+ImportScript  
+	/FileName:"Script/ee4306-project/circle_wall.txt"
+
+ImportScript
+	/FileName:"Script/ee4306-project/car1.txt"
+
+ImportScript
+	/FileName:"Script/ee4306-project/waypoint.txt"
+
+ImportScript
+	/FileName:"Script/ee4306-project/car2.txt"
+
+FlushScript 
+
+INF = 1000000
+
+robot1 = false
+robot2 = false
+robot3 = false
+
+//Compass global variable
+compass_reading = 0
+compassRaw = 0
+
+CarWidth = 0.313
+HeadingTole = 0.01
+
+//Laser global variables
+leftAngle = 0
+rightAngle = 0
+leftDist =50000
+rightDist = 50000
+frontDistX = 50000
+leftBackDist = 50000
+rangeData = Util.CreateArrayDouble(361)
+laserReadFlag = 0
+
+//global variables for planeScanner
+planeStartingIndex = Util.CreateArrayDouble(10)
+planeEndingIndex = Util.CreateArrayDouble(10)
+planePerDist = Util.CreateArrayDouble(10)
+planeAngle = Util.CreateArrayDouble(10)
+
+//getCarSpeed
+leftCarDist = 0
+rightCarDist = 0
+
+dvLeftCar = 0
+dvRightCar = 0
+dpLeftCar = 0
+dpRightCar = 0
+
+dvFront = 0
+dpFront = 0
+//smoothGo variables
+temp = 0
+leftWheel = 0
+rightWheel = 0
+z0 = 0
+z1 = 0
+middlePoint = 0
+
+// speed - power constant (speed = power x constant)
+kv = 1.56
+
+//waypoints
+waypoint_X = Util.CreateArrayDouble(6)
+waypoint_Z = Util.CreateArrayDouble(6)
+wi = 0 //waypoint_index
+StraightModeEnable = true
+
+WaitForEntityCreation    car1
+wait 1000
+print "3"
+wait 1000
+print "2"
+wait 1000
+print "1"
+wait 1000
+print "GO!"
+
+call initWaypoint()
+call execute()
+
+Procedure execute()    	/Concurrent:true
+{
+	call car1Go(0.5)
+	call car2Go(0.2) 
+}
+End
+
+Procedure waypointCheckingStraightMode()
+{
+	call getWaypointDist(wi)
+	if (getWaypointDist < 2)
+		StraightModeEnable = false
+}
+End
+
+
+Procedure car1Go(maxPower)
+	count = 0
+	followPower = maxPower
+	while (true) {
+
+		for( wi= 0 ; wi< 6; wi++){
+			print "------------------------------------------------"
+			print "getting to waypoint "+wi+" (" + waypoint_X[wi]+","+waypoint_Z[wi]+")"
+			
+
+			if( wi%3 == 0)
+			{
+				print "Straight Mode"
+				StraightModeEnable = true
+
+				call getWaypointDist(wi)
+				while (StraightModeEnable)
+					call straightMode(maxPower)
+			}
+			else
+			{
+				print "Bend Mode"
+			}
+
+			call getWaypointDist(wi)
+
+			while (getWaypointDist > 2)
+			{
+				count++
+				call wallFollow(0.5, followPower)	
+				
+				wait 10
+
+				if(count == 10){
+					count =0
+
+					frontCarDist = 999999
+					call scanForPlanes(90,271,50)
+					for(ind = 0; ind < scanForPlanes ; ind++)
+					{
+						if(scanForPlanes ==1)
+						{
+							frontCarDist= planePerDist[0]
+							break
+						}
+						if(planeAngle[ind] > 0){
+							frontCarDist= planePerDist[ind]
+							break
+						}
+					}
+
+					if(frontCarDist < 3)
+						followPower = followPower - 0.1
+					else
+					{
+						followPower = followPower + 0.2
+						if(followPower > maxPower)
+							followPower = maxPower
+					}
+					print "------> frontCarDist: " + frontCarDist
+					print "------> followPower: " + followPower
+				}
+
+				call getWaypointDist(wi)
+
+			}
+
+			pX = car1.Position.X
+			pZ = car1.Position.Z
+			pX = Util.ToInt(1000.0* pX)/1000.0
+			pZ = Util.ToInt(1000.0* pZ)/1000.0
+			call getWaypointDist(wi)
+			print "reached waypoint "+wi+" current position: (" + pX+","+pZ+")" + "dist: " + getWaypointDist
+		}
+	}
+End
+
+//------------------ KEYPAD CONTROL FUNCTIONS -------------------------
+Procedure proc2
+	if(value.Pressed[1])
+		robot1 =true
+	else
+		robot1 = false
+	
+	if(value.Pressed[2]){
+		print compassRaw / Math.PI * 180
+		call getWaypointDirection(2)
+	}
+		
+End
+
+Procedure  proc1
+	x = value.X
+	y = value.Y
+		
+	x = x * 0.2
+	
+	leftPower = (-y + x) / 1500.0
+	rightPower = (-y - x) / 1500.0
+
+	if(leftPower > 1)
+		leftPower = 1
+	if(rightPower > 1)
+		rightPower = 1
+
+
+	if(robot1)
+		car1.Go(leftPower, rightPower)
+End
