@@ -1,4 +1,4 @@
-﻿//DesktopJoystick    joystick1
+//DesktopJoystick    joystick1
 //	/Procedure_UpdateAxes:proc1
 //	/Procedure_UpdateButtons:proc2
 
@@ -97,8 +97,8 @@ call execute()
 Procedure execute()    	/Concurrent:true
 {
 	call car1Go(0.7)
-	call car2Go(0.5)
 	call car3Go(0.3)
+	call car2Go(0.3)
 }
 End
 
@@ -160,7 +160,7 @@ Procedure car1Go(maxPower)
 						}
 	
 						if(frontCarDist < 3)
-							followPower = followPower - 0.1
+							followPower = followPower*0.8
 						else
 						{
 							followPower = followPower + 0.2

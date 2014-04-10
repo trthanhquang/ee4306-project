@@ -1,13 +1,7 @@
-//UpdateCameraView  
-//	/EyePosition:0 40 -20  	/LookAtPoint:0 0 0
-
-//ImportScript  
-//	/FileName:"Script/ee4306-project/circle_wall.txt"
-
-//Vehicle 2
+﻿//Vehicle 2
 AddDifferentialDriveEntity    car2
 	/Orientation:0    180   0
-	/Position: 6.4   0    -16
+	/Position: 6.4   0    -15
 	/Mass: 10
 	AddLaserRangeFinderEntity    lrf_front2
 		/Position:0  0.35  -0.25
@@ -97,12 +91,12 @@ Procedure laser_read2
 End
 
 Procedure getAngleToWall2(d1, d2)
-	y = d2 * Math.Sin(Math.PI / 12);
-	x = d1 - d2 * Math.Cos(Math.PI / 12);
-	a = 90-(Math.Atan (y/x )/Math.PI *180.0);
-	if (a>=90) 
-		a = a-180;
-	return a;
+	y2 = d2 * Math.Sin(Math.PI / 12);
+	x2 = d1 - d2 * Math.Cos(Math.PI / 12);
+	a2 = 90-(Math.Atan (y2/x2 )/Math.PI *180.0);
+	if (a2>=90) 
+		a2 = a2-180;
+	return a2;
 End
 
 Procedure getDistanceToWall2(d1,d2)

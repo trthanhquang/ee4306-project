@@ -77,7 +77,7 @@ Procedure straightMode(basePower)
 	readyToOvertake = false
 	while((StraightModeEnable) && (!readyToOvertake))
 	{
-		if( Math.Abs (0.75-leftDist) > 0.1)
+		if((Math.Abs (0.75-leftDist) > 0.1) && (followingPower >= 0))
 			call smoothGoTo(1,0.75 - leftDist,followingPower)
 		else
 			print "skip smoothGo"
@@ -86,9 +86,10 @@ Procedure straightMode(basePower)
 			print "----------------------------------------------------------"
 			print "Checking for overtaking condition"
 			call scanForSpeed()
+
 			//updating following speed - maintain 2m behind the leftCar
 			car2Power = followingPower + dpLeftCar
-			followingPower = car2Power
+			
 
 			print "followingPower: " + followingPower
 			d1 = leftCarDist
@@ -118,25 +119,33 @@ Procedure straightMode(basePower)
 
 			rightCarPower = followingPower + dpRightCar
 			rightCarSpeed = rightCarPower*kv
-			rightCarDx = - rightCarSpeed * totalTimeRequired
+			rightCarDx = - (rightCarSpeed * totalTimeRequired)
 			
 			print "rightCar Speed: " + rightCarSpeed + "(power = " + rightCarPower +")"
 			print "rightCar Dx: " + rightCarDx
 			
-			if((dpRightCar!= INF) && (rightCarSpeed > 0))
+//			if(rightCarSpeed > 0)
+//			{
+//				print "!!!!! ERROR in detecting rightCarSpeed !!!!!!!"
+//				continue
+//			}
+			if(rightCarSpeed > 0)
 			{
-				print "!!!!! ERROR in detecting rightCarSpeed !!!!!!!"
-				continue
+				idealDist = totalDistanceRequired
 			}
-
-			idealDist = totalDistanceRequired + rightCarDx
+			else 
+			{
+				idealDist = totalDistanceRequired + rightCarDx
+			}
 			print "idealDist: " + idealDist
 			print "rightCarDist: " + rightCarDist
-
-		if(rightCarDist > idealDist)
+		call getWaypointDist(wi)
+		nextWaypointDist = getWaypointDist
+		if((rightCarDist > idealDist) && (nextWaypointDist > idealDist))
 		{
 			readyToOvertake = true
 		}
+		followingPower = car2Power
 	}
 
 	print " *** phase 3 *** "

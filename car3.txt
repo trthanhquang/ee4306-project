@@ -1,10 +1,10 @@
 ﻿//Vehicle 3
 AddDifferentialDriveEntity    car3
 	/Orientation:0    0   0
-	/Position: 5.6   0    -5
+	/Position: 5.6   0    -7
 	/Mass: 10
 	AddLaserRangeFinderEntity    lrf_front3
-		/Position:0  0.35  -0.25
+		/Position:0  0.35  -0.15
 		/ParentEntity:car3
 		/Procedure_SensorNotify: laser_read3
 	
@@ -91,12 +91,12 @@ Procedure laser_read3
 End
 
 Procedure getAngleToWall3(d1, d2)
-	y = d2 * Math.Sin(Math.PI / 12);
-	x = d1 - d2 * Math.Cos(Math.PI / 12);
-	a = 90-(Math.Atan (y/x )/Math.PI *180.0);
-	if (a>=90) 
-		a = a-180;
-	return a;
+	y3 = d2 * Math.Sin(Math.PI / 12);
+	x3 = d1 - d2 * Math.Cos(Math.PI / 12);
+	a3 = 90-(Math.Atan (y3/x3 )/Math.PI *180.0);
+	if (a3>=90) 
+		a3 = a3-180;
+	return a3;
 End
 
 Procedure getDistanceToWall3(d1,d2)
