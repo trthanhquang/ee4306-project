@@ -1,7 +1,7 @@
-//Vehicle 1
+﻿//Vehicle 1
 AddDifferentialDriveEntity    car1
 	/Orientation:0    180    0
-	/Position: 6.5   0    -21
+	/Position: 6.5   0    -20
 	/Mass: 10
 	AddLaserRangeFinderEntity    lrf_front
 		/Position:0  0.15  -0.25
@@ -76,7 +76,10 @@ Procedure straightMode(basePower)
 	readyToOvertake = false
 	while((StraightModeEnable) && (!readyToOvertake))
 	{
-		call smoothGoTo(2,0.75 - leftDist,followingPower*1.5)
+		if( Math.Abs (0.75-leftDist) > 0.1)
+			call smoothGoTo(1,0.75 - leftDist,followingPower)
+		else
+			print "skip smoothGo"
 		call correctHeadingLeft(followingPower)
 
 			print "----------------------------------------------------------"
@@ -100,6 +103,11 @@ Procedure straightMode(basePower)
 			
 			call estimateOvertakingTime(d1, d2, 1.4, 1.4, car2Power, overtakingPower, t1, t2, t3,basePower)
 			overtakingTime = estimateOvertakingTime
+			if(overtakingTime == 0)
+			{
+				print "!!!!!ERROR in calculating overtaking time!"
+				continue
+			}
 
 			totalTimeRequired = t1+t2+t3+overtakingTime
 			totalDistanceRequired = d1+ d2+d3 +overtakingTime*overtakingPower*kv

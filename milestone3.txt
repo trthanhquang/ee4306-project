@@ -17,8 +17,8 @@ ImportScript
 ImportScript
 	/FileName:"Script/ee4306-project/car2.txt"
 
-//ImportScript
-//	/FileName:"Script/ee4306-project/car3.txt"
+ImportScript
+	/FileName:"Script/ee4306-project/car3.txt"
 
 FlushScript 
 
@@ -97,7 +97,7 @@ call execute()
 
 Procedure execute()    	/Concurrent:true
 {
-	call car1Go(1)
+	call car1Go(0.7)
 	call car2Go(0.5)
 	call car3Go(0.3)
 }
