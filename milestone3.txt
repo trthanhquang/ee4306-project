@@ -1,9 +1,9 @@
-//DesktopJoystick    joystick1
+﻿//DesktopJoystick    joystick1
 //	/Procedure_UpdateAxes:proc1
 //	/Procedure_UpdateButtons:proc2
 
 UpdateCameraView  
-	/EyePosition:-10 40 0  	/LookAtPoint:-10 0 0
+	/EyePosition:-0.5 22 -10  	/LookAtPoint:0.5 0 -10
 
 ImportScript  
 	/FileName:"Script/ee4306-project/circle_wall.txt"
@@ -80,7 +80,9 @@ wi = 0 //waypoint_index
 StraightModeEnable = true
 
 WaitForEntityCreation    car1
-wait 1000
+WaitForEntityCreation    car2
+WaitForEntityCreation    car3
+
 print "3"
 wait 1000
 print "2"
@@ -91,9 +93,6 @@ print "GO!"
 
 call initWaypoint()
 call execute()
-
-//call smoothGoTo(2, 0.3 ,1.5)
-//call smoothGoTo(2, 0.3 ,1)
 
 Procedure execute()    	/Concurrent:true
 {

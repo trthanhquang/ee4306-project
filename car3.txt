@@ -1,7 +1,7 @@
 ﻿//Vehicle 3
 AddDifferentialDriveEntity    car3
 	/Orientation:0    0   0
-	/Position: 5.5   0    -5
+	/Position: 5.6   0    -5
 	/Mass: 10
 	AddLaserRangeFinderEntity    lrf_front3
 		/Position:0  0.35  -0.25
@@ -26,7 +26,7 @@ Procedure car3Go(power)
 	while(true)
 	{
 		call wallFollow3(0.5,power)
-		wait 100
+		wait 10
 	}
 }
 End

@@ -1,4 +1,4 @@
-﻿//UpdateCameraView  
+//UpdateCameraView  
 //	/EyePosition:0 40 -20  	/LookAtPoint:0 0 0
 
 //ImportScript  
@@ -7,7 +7,7 @@
 //Vehicle 2
 AddDifferentialDriveEntity    car2
 	/Orientation:0    180   0
-	/Position: 6.5   0    -15
+	/Position: 6.4   0    -16
 	/Mass: 10
 	AddLaserRangeFinderEntity    lrf_front2
 		/Position:0  0.35  -0.25
@@ -32,7 +32,7 @@ Procedure car2Go(power)
 	while(true)
 	{
 		call wallFollow2(0.5,power)
-		wait 100
+		wait 10
 	}
 }
 End
