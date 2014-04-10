@@ -10,7 +10,7 @@ AddDifferentialDriveEntity    car2
 	/Position: 6.5   0    -16
 	/Mass: 10
 	AddLaserRangeFinderEntity    lrf_front2
-		/Position:0  0.15  -0.25
+		/Position:0  0.35  -0.25
 		/ParentEntity:car2
 		/Procedure_SensorNotify: laser_read2
 	
@@ -40,36 +40,36 @@ End
 Procedure wallFollow2(goalDist, basePower)
 	Kh = 0.5 / 90.0;
 	Kd = 0.3;
-	angularMax = 0.07
-	lateralMax = 0.05
+	angularMax2 = 0.07
+	lateralMax2 = 0.05
 
-	angularError = Util.ToInt (1000.0* leftAngle2)/1000.0
-	angularOutput = Kh*angularError;
+	angularError2 = Util.ToInt (1000.0* leftAngle2)/1000.0
+	angularOutput2 = Kh*angularError2;
 
-	if(angularOutput > angularMax)
-		angularOutput = angularMax
-	if(angularOutput < (-angularMax))
-		angularOutput = -angularMax
+	if(angularOutput2 > angularMax2)
+		angularOutput2 = angularMax2
+	if(angularOutput2 < (-angularMax2))
+		angularOutput2 = -angularMax2
 	
-	lateralError = Util.ToInt( 1000.0 *( goalDist - leftDist2))/1000.0;
-	lateralOutput = Kd*lateralError
+	lateralError2 = Util.ToInt( 1000.0 *( goalDist - leftDist2))/1000.0;
+	lateralOutput2 = Kd*lateralError2
 
-	if(lateralOutput > lateralMax)
-		lateralOutput = lateralMax
-	if(lateralOutput < (-lateralMax))
-		lateralOutput = -lateralMax
+	if(lateralOutput2 > lateralMax2)
+		lateralOutput2 = lateralMax2
+	if(lateralOutput2 < (-lateralMax2))
+		lateralOutput2 = -lateralMax2
 
-	leftPower = basePower + angularOutput + lateralOutput
-	rightPower = basePower - angularOutput - lateralOutput
+	leftPower2 = basePower + angularOutput2 + lateralOutput2
+	rightPower2 = basePower - angularOutput2 - lateralOutput2
 
-	leftPower = Util.ToInt (1000.0* leftPower) / 1000.0
-	rightPower = Util.ToInt (1000.0* rightPower) / 1000.0
-	angularOutput = Util.ToInt (1000.0* angularOutput) / 1000.0
-	lateralOutput = Util.ToInt (1000.0* lateralOutput) / 1000.0
+	leftPower2 = Util.ToInt (1000.0* leftPower2) / 1000.0
+	rightPower2 = Util.ToInt (1000.0* rightPower2) / 1000.0
+	angularOutput2 = Util.ToInt (1000.0* angularOutput2) / 1000.0
+	lateralOutput2 = Util.ToInt (1000.0* lateralOutput2) / 1000.0
 
-//	print "(" + leftPower + " " + rightPower+ ") aErr: "+ angularError+", laErr: "+ lateralError + ", aOut: " + angularOutput + ",laOut: "+ lateralOutput
-//	print "laErr: "+ lateralError + ", aErr: "+ angularError+ ", laOut: "+ lateralOutput + ", aOut: " + angularOutput
-	car2.Go(leftPower, rightPower);
+//	print "(" + leftPower2 + " " + rightPower2+ ") aErr: "+ angularError2+", laErr: "+ lateralError2 + ", aOut: " + angularOutput2 + ",laOut: "+ lateralOutput2
+//	print "laErr: "+ lateralError2 + ", aErr: "+ angularError2+ ", laOut: "+ lateralOutput2 + ", aOut: " + angularOutput2
+	car2.Go(leftPower2, rightPower2);
 End
 //--------------------------------------------------------------------------------------------------//
 Procedure compass_read2
@@ -83,20 +83,20 @@ Procedure laser_read2
 	right2 =value.DistanceMeasurements[30] /1000.0
 	frontDist = value.DistanceMeasurements[180] / 1000.0
 
-	call getAngleToWall(left1,left2)
-	leftAngle2 = getAngleToWall
+	call getAngleToWall2(left1,left2)
+	leftAngle2 = getAngleToWall2
 	
-	call getAngleToWall(right1,right2)
-	rightAngle2 = - getAngleToWall
+	call getAngleToWall2(right1,right2)
+	rightAngle2 = - getAngleToWall2
 	
-	call getDistanceToWall(left1,left2)
-	leftDist2 = getDistanceToWall + 0.2 * Math.Sin (leftAngle2* Math.PI /180.0)
+	call getDistanceToWall2(left1,left2)
+	leftDist2 = getDistanceToWall2 + 0.2 * Math.Sin (leftAngle2* Math.PI /180.0)
 
-	call getDistanceToWall(right1,right2)
-	rightDist2 = getDistanceToWall - 0.2 * Math.Sin (rightAngle2 * Math.PI /180.0)
+	call getDistanceToWall2(right1,right2)
+	rightDist2 = getDistanceToWall2 - 0.2 * Math.Sin (rightAngle2 * Math.PI /180.0)
 End
 
-Procedure getAngleToWall(d1, d2)
+Procedure getAngleToWall2(d1, d2)
 	y = d2 * Math.Sin(Math.PI / 12);
 	x = d1 - d2 * Math.Cos(Math.PI / 12);
 	a = 90-(Math.Atan (y/x )/Math.PI *180.0);
@@ -105,7 +105,7 @@ Procedure getAngleToWall(d1, d2)
 	return a;
 End
 
-Procedure getDistanceToWall(d1,d2)
-	temp = (d1 - d2 * Math.Cos(Math.PI /12))/(d2*Math.Sin( Math.PI /12));
-	return d1/ Math.Sqrt (1 + Math.Pow (temp,2));
+Procedure getDistanceToWall2(d1,d2)
+	temp2 = (d1 - d2 * Math.Cos(Math.PI /12))/(d2*Math.Sin( Math.PI /12));
+	return d1/ Math.Sqrt (1 + Math.Pow (temp2,2));
 End

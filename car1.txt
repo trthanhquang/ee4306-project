@@ -1,4 +1,4 @@
-﻿//Vehicle 1
+//Vehicle 1
 AddDifferentialDriveEntity    car1
 	/Orientation:0    180    0
 	/Position: 6.5   0    -20
@@ -244,7 +244,7 @@ Procedure smoothGoTo(deltaX, deltaZ,basePower)
 	diff_heading = 0
 	if (deltaZ > 0) {
 		leftWheel = basePower
-		rightWheel = (smTemp - 1) *leftWheel / (smTemp + 1)
+		rightWheel = (smTemp - 1) * leftWheel / (smTemp + 1)
 		while (diff_heading < target_heading) {
 			car1.Go(leftWheel, rightWheel)
 			diff_heading = compass_reading - orig_heading
@@ -401,86 +401,13 @@ Procedure scanForSpeed()
 	if ((index < 180) && (rightCarDist !=INF))
 	{
 		dvRightCar = (planePerDist[0] - rightCarDist)*4 //dt=0.25s
-		dpRightCar = Util.ToInt(dvRightCar/kv*100) /100.0
+		dpRightCar = Util.ToInt((dvRightCar/kv)*100) / 100.0
 		rightCarDist = Util.ToInt(planePerDist[0]*1000) /1000.0
 		print "[2] detect right car at " + rightCarDist + ", with dpRight = "+dpRightCar
 		result = true
 	}
 	return result
 End
-
-
-Procedure scanForSpeed()
-	dvLeftCar = INF
-	dvRightCar = INF
-	rightCarDist = INF
-	leftCarDist = INF
-
-	laserReadFlag = 1
-	call scanForPlanes(0, 361,10)
-	counter1= scanForPlanes
-	if(counter1 == 0)
-		return true //no car ahead
-	
-	index = (planeEndingIndex[counter1-1] + planeStartingIndex[counter1-1])/2.0
-	if(counter1 == 1)
-		index = planeEndingIndex[counter1-1]
-	
-	if(index>= 180){
-		leftCarDist = Util.ToInt(planePerDist[counter1-1]*1000) /1000.0
-//		print "[1] detect left car at " + leftCarDist
-	}
-	
-	index = (planeEndingIndex[0] + planeStartingIndex[0])/2.0
-	if(counter1 == 1)
-		index = planeEndingIndex[0]
-
-	if (index < 180){
-		rightCarDist = Util.ToInt(planePerDist[0]*1000) /1000.0
-//		print "[1] detect right car at " + rightCarDist
-	}
-
-
-//	print "____ 2nd Scan ____"
-	//scan 2nd time
-	
-	while(laserReadFlag>0)
-		wait 50
-	call scanForPlanes(0, 361,10)
-	counter2 = scanForPlanes
-
-	if(counter2 == 0)
-		return false //may have error !!!
-	
-	result = false
-	index = (planeEndingIndex[counter2-1] + planeStartingIndex[counter2-1])/2.0
-	if(counter2 == 1)
-		index = planeEndingIndex[counter2-1]
-
-	if((index >= 180) && (leftCarDist !=INF)){
-		dvLeftCar = (planePerDist[counter2-1] - leftCarDist)*4 //dt = 0.25s
-		dpLeftCar = Util.ToInt(dvLeftCar/kv*100) /100.0
-		leftCarDist = Util.ToInt(planePerDist[counter2-1]*1000) /1000.0
-		print "[2] detect left car at " + leftCarDist + ", with dpLeft = " + dpLeftCar
-		result = true
-	}
-
-	index = (planeEndingIndex[0] + planeStartingIndex[0])/2.0
-	if(counter2 == 1)
-		index = planeEndingIndex[0]
-
-	if ((index < 180) && (rightCarDist !=INF))
-	{
-		dvRightCar = (planePerDist[0] - rightCarDist)*4 //dt=0.25s
-		dpRightCar = Util.ToInt(dvRightCar/kv*100) /100.0
-		rightCarDist = Util.ToInt(planePerDist[0]*1000) /1000.0
-		print "[2] detect right car at " + rightCarDist + ", with dpRight = "+dpRightCar
-		result = true
-	}
-	return result
-End
-
-
 
 Procedure scanForPlanes(lower_bound, upper_bound, angle_threshold)
 	// perpendicular distance to planes

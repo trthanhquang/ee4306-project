@@ -3,7 +3,7 @@
 //	/Procedure_UpdateButtons:proc2
 
 UpdateCameraView  
-	/EyePosition:0 40 -20  	/LookAtPoint:0 0 0
+	/EyePosition:-10 40 0  	/LookAtPoint:-10 0 0
 
 ImportScript  
 	/FileName:"Script/ee4306-project/circle_wall.txt"
@@ -17,8 +17,8 @@ ImportScript
 ImportScript
 	/FileName:"Script/ee4306-project/car2.txt"
 
-//ImportScript
-//	/FileName:"Script/ee4306-project/car3.txt"
+ImportScript
+	/FileName:"Script/ee4306-project/car3.txt"
 
 FlushScript 
 
