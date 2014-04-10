@@ -7,7 +7,7 @@
 //Vehicle 2
 AddDifferentialDriveEntity    car2
 	/Orientation:0    180   0
-	/Position: 6.5   0    -16
+	/Position: 6.5   0    -17
 	/Mass: 10
 	AddLaserRangeFinderEntity    lrf_front2
 		/Position:0  0.35  -0.25

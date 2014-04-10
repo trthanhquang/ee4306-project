@@ -1,7 +1,7 @@
 //Vehicle 1
 AddDifferentialDriveEntity    car1
 	/Orientation:0    180    0
-	/Position: 6.5   0    -20
+	/Position: 6.5   0    -21
 	/Mass: 10
 	AddLaserRangeFinderEntity    lrf_front
 		/Position:0  0.15  -0.25
@@ -70,6 +70,7 @@ Procedure straightMode(basePower)
 	
 	car2Power = basePower + dpFront
 	followingPower = car2Power +0.05
+	overtakingPower = 1.2*basePower
 
 	count = 0
 	readyToOvertake = false
@@ -90,16 +91,14 @@ Procedure straightMode(basePower)
 			d2 = 2 //(m)
 
 			//Overtaking evaluation:
-			call estimateSmoothGoTime(2,0.4,basePower)
+			call estimateSmoothGoTime(1.4,0.2,basePower)
 			t1 = estimateSmoothGoTime
-			call estimateSmoothGoTime(2,-0.4,basePower)
+			call estimateSmoothGoTime(1.4,-0.3,basePower)
 			t2 = estimateSmoothGoTime
 			t3 = 1 //settling time for correcting heading (second)
-			d3 = t3 * basePower * kv
-			print "d3 = " + d3
-
-			overtakingPower = 1.5*basePower
-			call estimateOvertakingTime(d1, d2, 2, 2, car2Power, overtakingPower, t1, t2, t3,basePower)
+			d3 = 1.5
+			
+			call estimateOvertakingTime(d1, d2, 1.4, 1.4, car2Power, overtakingPower, t1, t2, t3,basePower)
 			overtakingTime = estimateOvertakingTime
 
 			totalTimeRequired = t1+t2+t3+overtakingTime
@@ -136,10 +135,12 @@ Procedure straightMode(basePower)
 	if(StraightModeEnable){
 		print "overtaking.... "
 		call overtake(d1,d2,basePower,car2Power,overtakingPower)
-		return overtakingPower
-	}
-	else{
-		return followingPower
+		
+		while((StraightModeEnable) && (Math.Abs (leftAngle) > 5))
+		{
+			call wallFollow(0.5,basePower)
+			wait 100
+		}
 	}
 }
 
@@ -172,18 +173,18 @@ Procedure straightModeLeft(distToWall, safeDistance, power)
 End
 
 Procedure overtake(d1,d2, basePower, car2Power, overtakingPower) 
-	call smoothGoTo(2,0.4,basePower)
+	call smoothGoTo(1.4,0.2,basePower)
 	call correctHeadingRight(basePower)
 
-	call estimateSmoothGoTime(2,0.4,basePower)
+	call estimateSmoothGoTime(1.4,0.2,basePower)
 	t1 = estimateSmoothGoTime
 
-	call estimateSmoothGoTime(2,-0.4,basePower)
+	call estimateSmoothGoTime(1.4,-0.3,basePower)
 	t2 = estimateSmoothGoTime
 	print "actual t1 = " +t1+",t2 = "+ t2
-	t3 = correctHeadingRight
+	t3 = 1.5
 
-	call estimateOvertakingTime(d1, d2, 2, 2, car2Power, overtakingPower, t1, t2, t3,basePower)
+	call estimateOvertakingTime(d1, d2, 1.4, 1.4, car2Power, overtakingPower, t1, t2, t3,basePower)
 	print "overtaking Time = " + estimateOvertakingTime
 	
 	totalTime = t1+t2+t3+estimateOvertakingTime
@@ -194,7 +195,7 @@ Procedure overtake(d1,d2, basePower, car2Power, overtakingPower)
 		car1.Go(overtakingPower)
 		wait tmax
 	}
-	call smoothGoTo(2,-0.4, basePower)
+	call smoothGoTo(1.4,-0.3, basePower)
 End
 
 Procedure correctHeadingLeft(baseSpeed)
@@ -238,50 +239,85 @@ End
 Procedure smoothGoTo(deltaX, deltaZ,basePower)
 	print "-----------------------------------------------------------"
 	print "Going smoothly to: " + deltaX + " --- " + deltaZ + " ---- Power: " + basePower
-	orig_heading = compass_reading
+	origX = car1.Position.X
+	origZ = car1.Position.Z
+	sinHeading = Math.Sin (car1.Orientation.Y * Math.PI / 180)
+	cosHeading = Math.Cos (car1.Orientation.Y * Math.PI / 180)
+	
 	smTemp = Math.Abs((deltaX*deltaX*1.0 + deltaZ*deltaZ*1.0) / (2*CarWidth*deltaZ*1.0))
-	target_heading = Math.Abs( Math.Asin( 2*deltaX*deltaZ*1.0 / (deltaX*deltaX*1.0 + deltaZ*deltaZ*1.0) ) / (2*Math.PI))  - HeadingTole
-	diff_heading = 0
+	oy = car1.Orientation.Y
+	print "original heading: " + oy
+	print "sin & cos heading: " + sinHeading + "    " + cosHeading
+	print "orig position: " + origX + "   " + origZ
+	
 	if (deltaZ > 0) {
 		leftWheel = basePower
 		rightWheel = (smTemp - 1) * leftWheel / (smTemp + 1)
-		while (diff_heading < target_heading) {
+		curX = (car1.Position.X-origX)*sinHeading - (car1.Position.Z-origZ)*cosHeading
+		curZ = (car1.Position.X-origX)*cosHeading + (car1.Position.Z-origZ)*sinHeading
+		px = car1.Position.X
+		pz = car1.Position.Z
+		print "Global position: " + px + "    " + pz
+		print "cur position: " + curX + "   " + curZ
+		while (curZ < (deltaZ/2)) {
 			car1.Go(leftWheel, rightWheel)
-			diff_heading = compass_reading - orig_heading
-			if (diff_heading < (-0.5))
-				diff_heading = diff_heading + 1
+			curZ = (car1.Position.X-origX)*cosHeading + (car1.Position.Z-origZ)*sinHeading
 		}
 		car1.Go(basePower)
 		rightWheel = basePower
 		leftWheel = (smTemp - 1) * rightWheel / (smTemp + 1)
-		while (diff_heading > HeadingTole) {
+		curX = (car1.Position.X-origX)*sinHeading - (car1.Position.Z-origZ)*cosHeading
+		curZ = (car1.Position.X-origX)*cosHeading + (car1.Position.Z-origZ)*sinHeading
+		px = car1.Position.X
+		pz = car1.Position.Z
+		print "Global position: " + px + "    " + pz
+		print "cur position: " + curX + "   " + curZ
+		while (curZ < deltaZ) {
 			car1.Go(leftWheel, rightWheel)
-			diff_heading = compass_reading - orig_heading
-			if (diff_heading < (-0.5))
-				diff_heading = diff_heading + 1
+			curZ = (car1.Position.X-origX)*cosHeading + (car1.Position.Z-origZ)*sinHeading
 		}
+		curX = (car1.Position.X-origX)*sinHeading - (car1.Position.Z-origZ)*cosHeading
+		curZ = (car1.Position.X-origX)*cosHeading + (car1.Position.Z-origZ)*sinHeading
+		px = car1.Position.X
+		pz = car1.Position.Z
+		print "Global position: " + px + "    " + pz
+		print "cur position: " + curX + "   " + curZ
 	}
 	else {
 		rightWheel = basePower
 		leftWheel = (smTemp - 1) * rightWheel / (smTemp + 1)
-		diff_heading = orig_heading - compass_reading
-		while (diff_heading < target_heading) {
+		curX = (car1.Position.X-origX)*sinHeading - (car1.Position.Z-origZ)*cosHeading
+		curZ = (car1.Position.X-origX)*cosHeading + (car1.Position.Z-origZ)*sinHeading
+		px = car1.Position.X
+		pz = car1.Position.Z
+		print "Global position: " + px + "    " + pz
+		print "cur position: " + curX + "   " + curZ
+		while (curZ > (deltaZ/2)) {
 			car1.Go(leftWheel, rightWheel)
-			diff_heading = orig_heading - compass_reading
-			if (diff_heading < (-0.5))
-				diff_heading = diff_heading + 1
+			curZ = (car1.Position.X-origX)*cosHeading + (car1.Position.Z-origZ)*sinHeading
 		}
 		car1.Go(basePower)
 		leftWheel = basePower
 		rightWheel = (smTemp - 1) *leftWheel / (smTemp + 1)
-		while (diff_heading > HeadingTole) {
+		curX = (car1.Position.X-origX)*sinHeading - (car1.Position.Z-origZ)*cosHeading
+		curZ = (car1.Position.X-origX)*cosHeading + (car1.Position.Z-origZ)*sinHeading
+		px = car1.Position.X
+		pz = car1.Position.Z
+		print "Global position: " + px + "    " + pz
+		print "cur position: " + curX + "   " + curZ
+		while (curZ > deltaZ) {
 			car1.Go(leftWheel, rightWheel)
-			diff_heading = orig_heading - compass_reading
-			if (diff_heading < (-0.5))
-				diff_heading = diff_heading + 1
+			curZ = (car1.Position.X-origX)*cosHeading + (car1.Position.Z-origZ)*sinHeading
 		}
+		curX = (car1.Position.X-origX)*sinHeading - (car1.Position.Z-origZ)*cosHeading
+		curZ = (car1.Position.X-origX)*cosHeading + (car1.Position.Z-origZ)*sinHeading
+		px = car1.Position.X
+		pz = car1.Position.Z
+		print "Global position: " + px + "    " + pz
+		print "cur position: " + curX + "   " + curZ
 	}
 	car1.Go(basePower)
+	print "-----------------------------------------------------------"
 End
 
 //--------------- SENSORS CALL BACK FUNCTIONS ---------------

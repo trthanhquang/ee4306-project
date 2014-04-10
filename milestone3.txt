@@ -17,8 +17,8 @@ ImportScript
 ImportScript
 	/FileName:"Script/ee4306-project/car2.txt"
 
-ImportScript
-	/FileName:"Script/ee4306-project/car3.txt"
+//ImportScript
+//	/FileName:"Script/ee4306-project/car3.txt"
 
 FlushScript 
 
@@ -92,6 +92,9 @@ print "GO!"
 call initWaypoint()
 call execute()
 
+//call smoothGoTo(2, 0.3 ,1.5)
+//call smoothGoTo(2, 0.3 ,1)
+
 Procedure execute()    	/Concurrent:true
 {
 	call car1Go(1)
@@ -107,7 +110,6 @@ Procedure waypointCheckingStraightMode()
 		StraightModeEnable = false
 }
 End
-
 
 Procedure car1Go(maxPower)
 	count = 0
