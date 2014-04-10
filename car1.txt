@@ -49,52 +49,57 @@ Procedure wallFollow(goalDist, basePower)
 	car1.Go(leftPower, rightPower);
 End
 
+
 Procedure straightMode(basePower)
 {
-		//assumption: currently at middle of land (leftDist = 0.5)
-		if(frontDistX > 2){
-			print "freeway!"
-			call straightModeLeft(0.5,2,basePower) //exit if frontDistX < 3m
-		}
-		print "Detected obstacle at " + frontDistX + " ahead with dp = " +dpFront
-		print "Going to checking position... " //(leftDist = 0.75)
-		
-		overtaken = false
+	//Phase1 : Wall following
+	print " *** phase 1 ****"
+ 	while((StraightModeEnable) && (frontDistX > 2))
+	{
+		call wallFollow(0.5,basePower)
+		wait 100
+	}
 
-		car2Power = basePower + dpFront
-		followingPower = car2Power +0.05
+	if(!StraightModeEnable)
+		return basePower
+	
+	print " *** phase 2 *** "
+	//Phase2 : Preparing for overtaking
+	print "Detected obstacle at " + frontDistX + " ahead with dp = " +dpFront
+	print "Going to checking position... " //(leftDist = 0.75)
+	
+	car2Power = basePower + dpFront
+	followingPower = car2Power +0.05
 
-		while((StraightModeEnable) && (!overtaken)){
-			call smoothGoTo(2,0.75 - leftDist,followingPower*1.5)
-			call correctHeadingLeft(followingPower)
+	count = 0
+	readyToOvertake = false
+	while((StraightModeEnable) && (!readyToOvertake))
+	{
+		call smoothGoTo(2,0.75 - leftDist,followingPower*1.5)
+		call correctHeadingLeft(followingPower)
 
 			print "----------------------------------------------------------"
 			print "Checking for overtaking condition"
 			call scanForSpeed()
 			//updating following speed - maintain 2m behind the leftCar
 			car2Power = followingPower + dpLeftCar
-//			if(leftCarDist < 2)
-//				followingPower = car2Power - 0.05
-//			else
-//				followingPower = car2Power + 0.05
 			followingPower = car2Power
-			car1.Go(followingPower)
-	
+
 			print "followingPower: " + followingPower
 			d1 = leftCarDist
-			d2 = 1.5 //(m)
+			d2 = 2 //(m)
 
 			//Overtaking evaluation:
-			call estimateSmoothGoTime(1.4,0.3,basePower)
+			call estimateSmoothGoTime(2,0.4,basePower)
 			t1 = estimateSmoothGoTime
-			call estimateSmoothGoTime(1.4,-0.5,basePower)
+			call estimateSmoothGoTime(2,-0.4,basePower)
 			t2 = estimateSmoothGoTime
 			t3 = 1 //settling time for correcting heading (second)
 			d3 = t3 * basePower * kv
 			print "d3 = " + d3
 
 			overtakingPower = 1.5*basePower
-			call estimateOvertakingTime(d1, d2, 1.4, 1.4, car2Power, overtakingPower, t1, t2, t3,basePower)
+			call estimateOvertakingTime(d1, d2, 2, 2, car2Power, overtakingPower, t1, t2, t3,basePower)
 			overtakingTime = estimateOvertakingTime
 
 			totalTimeRequired = t1+t2+t3+overtakingTime
@@ -119,19 +124,23 @@ Procedure straightMode(basePower)
 			idealDist = totalDistanceRequired + rightCarDx
 			print "idealDist: " + idealDist
 			print "rightCarDist: " + rightCarDist
-			if(rightCarDist > idealDist)
-			{
-				print rightCarDist
-				print "overtaking.... "
-				call overtake(d1,d2,basePower,car2Power,overtakingPower)
-				overtaken = true
-			}
-			else
-			{
-				print "Not safe to overtake, wait 1s..."
-				wait 1000
-			}
+
+		if(rightCarDist > idealDist)
+		{
+			readyToOvertake = true
 		}
+	}
+
+	print " *** phase 3 *** "
+	//Phase3: Overtaking
+	if(StraightModeEnable){
+		print "overtaking.... "
+		call overtake(d1,d2,basePower,car2Power,overtakingPower)
+		return overtakingPower
+	}
+	else{
+		return followingPower
+	}
 }
 
 
@@ -163,18 +172,18 @@ Procedure straightModeLeft(distToWall, safeDistance, power)
 End
 
 Procedure overtake(d1,d2, basePower, car2Power, overtakingPower) 
-	call smoothGoTo(1.4,0.3,basePower)
+	call smoothGoTo(2,0.4,basePower)
 	call correctHeadingRight(basePower)
 
-	call estimateSmoothGoTime(1.4,0.3,basePower)
+	call estimateSmoothGoTime(2,0.4,basePower)
 	t1 = estimateSmoothGoTime
 
-	call estimateSmoothGoTime(1.4,-0.5,basePower)
+	call estimateSmoothGoTime(2,-0.4,basePower)
 	t2 = estimateSmoothGoTime
 	print "actual t1 = " +t1+",t2 = "+ t2
 	t3 = correctHeadingRight
 
-	call estimateOvertakingTime(d1, d2, 1.4, 1.4, car2Power, overtakingPower, t1, t2, t3,basePower)
+	call estimateOvertakingTime(d1, d2, 2, 2, car2Power, overtakingPower, t1, t2, t3,basePower)
 	print "overtaking Time = " + estimateOvertakingTime
 	
 	totalTime = t1+t2+t3+estimateOvertakingTime
@@ -185,7 +194,7 @@ Procedure overtake(d1,d2, basePower, car2Power, overtakingPower)
 		car1.Go(overtakingPower)
 		wait tmax
 	}
-	call smoothGoTo(1.4,-0.5, basePower)
+	call smoothGoTo(2,-0.4, basePower)
 End
 
 Procedure correctHeadingLeft(baseSpeed)

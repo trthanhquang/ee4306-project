@@ -17,6 +17,9 @@ ImportScript
 ImportScript
 	/FileName:"Script/ee4306-project/car2.txt"
 
+//ImportScript
+//	/FileName:"Script/ee4306-project/car3.txt"
+
 FlushScript 
 
 INF = 1000000
@@ -91,8 +94,9 @@ call execute()
 
 Procedure execute()    	/Concurrent:true
 {
-	call car1Go(0.5)
-	call car2Go(0.2) 
+	call car1Go(1)
+	call car2Go(0.5)
+	call car3Go(0.3)
 }
 End
 
@@ -113,7 +117,6 @@ Procedure car1Go(maxPower)
 		for( wi= 0 ; wi< 6; wi++){
 			print "------------------------------------------------"
 			print "getting to waypoint "+wi+" (" + waypoint_X[wi]+","+waypoint_Z[wi]+")"
-			
 
 			if( wi%3 == 0)
 			{
@@ -121,55 +124,54 @@ Procedure car1Go(maxPower)
 				StraightModeEnable = true
 
 				call getWaypointDist(wi)
-				while (StraightModeEnable)
+				while (StraightModeEnable){
 					call straightMode(maxPower)
+				}
 			}
 			else
 			{
 				print "Bend Mode"
-			}
-
-			call getWaypointDist(wi)
-
-			while (getWaypointDist > 2)
-			{
-				count++
-				call wallFollow(0.5, followPower)	
-				
-				wait 10
-
-				if(count == 10){
-					count =0
-
-					frontCarDist = 999999
-					call scanForPlanes(90,271,50)
-					for(ind = 0; ind < scanForPlanes ; ind++)
-					{
-						if(scanForPlanes ==1)
-						{
-							frontCarDist= planePerDist[0]
-							break
-						}
-						if(planeAngle[ind] > 0){
-							frontCarDist= planePerDist[ind]
-							break
-						}
-					}
-
-					if(frontCarDist < 3)
-						followPower = followPower - 0.1
-					else
-					{
-						followPower = followPower + 0.2
-						if(followPower > maxPower)
-							followPower = maxPower
-					}
-					print "------> frontCarDist: " + frontCarDist
-					print "------> followPower: " + followPower
-				}
-
 				call getWaypointDist(wi)
 
+				while (getWaypointDist > 2)
+				{
+					count++
+					call wallFollow(0.5, followPower)	
+					
+					wait 10
+	
+					if(count == 10){
+						count =0
+	
+						frontCarDist = 999999
+						call scanForPlanes(90,271,50)
+						for(ind = 0; ind < scanForPlanes ; ind++)
+						{
+							if(scanForPlanes ==1)
+							{
+								frontCarDist= planePerDist[0]
+								break
+							}
+							if(planeAngle[ind] > 0){
+								frontCarDist= planePerDist[ind]
+								break
+							}
+						}
+	
+						if(frontCarDist < 3)
+							followPower = followPower - 0.1
+						else
+						{
+							followPower = followPower + 0.2
+							if(followPower > maxPower)
+								followPower = maxPower
+						}
+						print "------> frontCarDist: " + frontCarDist
+						print "------> followPower: " + followPower
+					}
+	
+					call getWaypointDist(wi)
+				}
 			}
 
 			pX = car1.Position.X

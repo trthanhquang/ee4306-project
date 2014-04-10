@@ -1,49 +1,43 @@
-﻿//UpdateCameraView  
-//	/EyePosition:0 40 -20  	/LookAtPoint:0 0 0
-
-//ImportScript  
-//	/FileName:"Script/ee4306-project/circle_wall.txt"
-
-//Vehicle 2
-AddDifferentialDriveEntity    car2
-	/Orientation:0    180   0
-	/Position: 6.5   0    -16
+﻿//Vehicle 3
+AddDifferentialDriveEntity    car3
+	/Orientation:0    0   0
+	/Position: 5.5   0    -6
 	/Mass: 10
-	AddLaserRangeFinderEntity    lrf_front2
+	AddLaserRangeFinderEntity    lrf_front3
 		/Position:0  0.15  -0.25
-		/ParentEntity:car2
-		/Procedure_SensorNotify: laser_read2
+		/ParentEntity:car3
+		/Procedure_SensorNotify: laser_read3
 	
-	AddCompassEntity    compass2
+	AddCompassEntity    compass3
 		/Position:-0.1  0.15  -0.25
-		/ParentEntity:car2
-		/Procedure_SensorNotify: compass_read2
+		/ParentEntity:car3
+		/Procedure_SensorNotify: compass_read3
 
-compassRaw2 = 0
-leftAngle2 = 0
-rightAngle2 = 0
-leftDist2 =50000
-rightDist2 = 50000
+compassRaw3 = 0
+leftAngle3 = 0
+rightAngle3 = 0
+leftDist3 =50000
+rightDist3 = 50000
 
 
 FlushScript  
-Procedure car2Go(power)
+Procedure car3Go(power)
 {
 	while(true)
 	{
-		call wallFollow2(0.5,power)
+		call wallFollow3(0.5,power)
 		wait 100
 	}
 }
 End
 
-Procedure wallFollow2(goalDist, basePower)
+Procedure wallFollow3(goalDist, basePower)
 	Kh = 0.5 / 90.0;
 	Kd = 0.3;
 	angularMax = 0.07
 	lateralMax = 0.05
 
-	angularError = Util.ToInt (1000.0* leftAngle2)/1000.0
+	angularError = Util.ToInt (1000.0* leftAngle3)/1000.0
 	angularOutput = Kh*angularError;
 
 	if(angularOutput > angularMax)
@@ -51,7 +45,7 @@ Procedure wallFollow2(goalDist, basePower)
 	if(angularOutput < (-angularMax))
 		angularOutput = -angularMax
 	
-	lateralError = Util.ToInt( 1000.0 *( goalDist - leftDist2))/1000.0;
+	lateralError = Util.ToInt( 1000.0 *( goalDist - leftDist3))/1000.0;
 	lateralOutput = Kd*lateralError
 
 	if(lateralOutput > lateralMax)
@@ -69,14 +63,14 @@ Procedure wallFollow2(goalDist, basePower)
 
 //	print "(" + leftPower + " " + rightPower+ ") aErr: "+ angularError+", laErr: "+ lateralError + ", aOut: " + angularOutput + ",laOut: "+ lateralOutput
 //	print "laErr: "+ lateralError + ", aErr: "+ angularError+ ", laOut: "+ lateralOutput + ", aOut: " + angularOutput
-	car2.Go(leftPower, rightPower);
+	car3.Go(leftPower, rightPower);
 End
 //--------------------------------------------------------------------------------------------------//
-Procedure compass_read2
-	compassRaw2 = value.RawMeasurement
+Procedure compass_read3
+	compassRaw3 = value.RawMeasurement
 End
 //----------------------------------------------------------------------------------------------------
-Procedure laser_read2
+Procedure laser_read3
 	left1 =value.DistanceMeasurements[360] / 1000.0
 	left2 =value.DistanceMeasurements[330] / 1000.0
 	right1 =value.DistanceMeasurements[0] / 1000.0
@@ -84,16 +78,16 @@ Procedure laser_read2
 	frontDist = value.DistanceMeasurements[180] / 1000.0
 
 	call getAngleToWall(left1,left2)
-	leftAngle2 = getAngleToWall
+	leftAngle3 = getAngleToWall
 	
 	call getAngleToWall(right1,right2)
-	rightAngle2 = - getAngleToWall
+	rightAngle3 = - getAngleToWall
 	
 	call getDistanceToWall(left1,left2)
-	leftDist2 = getDistanceToWall + 0.2 * Math.Sin (leftAngle2* Math.PI /180.0)
+	leftDist3 = getDistanceToWall + 0.2 * Math.Sin (leftAngle3* Math.PI /180.0)
 
 	call getDistanceToWall(right1,right2)
-	rightDist2 = getDistanceToWall - 0.2 * Math.Sin (rightAngle2 * Math.PI /180.0)
+	rightDist3 = getDistanceToWall - 0.2 * Math.Sin (rightAngle3 * Math.PI /180.0)
 End
 
 Procedure getAngleToWall(d1, d2)
