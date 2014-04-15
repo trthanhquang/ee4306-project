@@ -1,6 +1,13 @@
-ee4306-project
-==============
-Distributed Autnomous Robotics System
+Design and Simulation of Intelligent Agent for Self-driving Vehicle
 
-1) Obstacle Avoidance and Overtaking Algorithm for Autonomous Vehicle
-2) Path Planning
+Abstract – The capability of detecting obstacles and taking appropriate collision avoidance actions automatically while following the planned path is critical for safe operation of autonomous vehicle. This paper presents the design and the simulation of an autonomous vehicle, which is capable of performing obstacle avoidance actions while navigating using waypoints. Our vehicle must be able to address the toughest challenges in the development of autonomous vehicle which is the automation of overtaking maneuver.
+
+I. Introduction
+
+Autonomous vehicle can play an important role in vehicle active system to reduce traffic accidents. It can avoid some kinds of traffic accidents and improve the road and traffic efficiency at the same time. Lane change and Overtaking Maneuver are the most common behaviors of vehicle. A total of 7,168 accidents  were recorded by Singapore Police Force in 2012. As a consequence, 168 were died while other 9106 were injured . Most of these cases happened during land change and overtaking maneuvers. These accidents were caused by failing to leave enough distance, overtaking when there was poor visibility, or by not giving way to an overtaking vehicle. Simulating an autonomous vehicle is the first step in developing driving assistance as well as autonomous driving system to help reducing these mistakes made by human. 
+
+To simulate such scenario where the vehicle must react differently due to different situation, we use the Formula One (F1) race, where cars have to go through several laps and overtaking slower cars. The difference with F1 race is that there are cars going in opposite direction.  The challenge face the autonomous vehicle is to find out when to overtake. The race consists of the straight and the bend part of the route which can create different scenarios for the overtaking process. When it is in the straight part, the vehicle need to estimate the distance it required before performing land changing and overtaking action. Moreover, it must be able to avoid overtaking near the poor visibility regions (i.e. when it is entering the bend part of the route). 
+
+The differential drive robot is then used to simulate our real vehicle. The robot is equipped with Compass for heading control. The Global Positioning System (GPS) is used for navigation using waypoints. Moreover, we use Laser Rangefinder (LRF) to sense the surrounding environments which include other obstacles (i.e. other vehicles).
+
+The simulation is done in Microsoft Robotics Developer Studio through the use of Simple Programming Language (SPL) from Kim Young Joon. 
